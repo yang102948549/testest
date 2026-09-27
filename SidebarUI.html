@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* General body and scrollbar styles */
+        body { 
+            font-family: 'Inter', 'Noto Sans KR', sans-serif; 
+            background-image: linear-gradient(to bottom, #f9fafb, #f3f4f6); 
+            background-attachment: fixed; 
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+            overflow: hidden; /* Prevent horizontal scroll and content overflow */
+            margin: 0;
+            padding: 0;
+        }
+        body::-webkit-scrollbar { display: none; }
+
+        /* Menu styles */
+        .menu-group { background-color: white; border-radius: 0.75rem; border: 1px solid #e5e7eb; transition: box-shadow 0.2s ease-in-out; }
+        .menu-group:hover { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .menu-header { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 1rem; cursor: pointer; }
+        .menu-header-title { font-size: 1rem; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 0.75rem; }
+        .menu-header-title > span:first-child { font-size: 1.25rem; width: 20px; text-align: center; }
+        .submenu { max-height: 0; overflow: hidden; transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-top: 1px solid #e5e7eb; }
+        
+        /* Menu Button Styles */
+        .menu-button { display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; padding: 0.875rem 1.5rem; font-size: 1rem; font-weight: 500; color: #4b5563; transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; }
+        .menu-button:hover { background-color: #eff6ff; color: #2563eb; }
+        .menu-button:active { transform: scale(0.99); }
+        
+        /* Step Badge Style (신규 추가) */
+        .step-badge { background-color: #e0e7ff; color: #1d4ed8; font-size: 0.7rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; margin-right: 4px; }
+        
+        .arrow-icon { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* SweetAlert custom styles */
+        .swal2-popup{font-family:'Inter','Noto Sans KR',sans-serif !important;border-radius:.75rem !important;padding:1.5rem 1.5rem 2rem !important;box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1) !important}
+        .swal2-title{font-size:1.125rem !important;font-weight:600 !important;color:#1f2937 !important;padding:0 !important;margin-top:.5rem !important;margin-bottom:.5rem !important}
+        .swal2-html-container,.swal2-content{font-size:.9rem !important;color:#4b5563 !important;line-height:1.6 !important;margin:.5rem 0 1.5rem !important;text-align:center !important}
+        .swal2-actions{display:flex !important;justify-content:center !important;gap:.75rem !important;width:100% !important;margin-top:.5rem !important}
+        .swal2-confirm{background-color:#3b82f6 !important;color:#fff !important;border-radius:.5rem !important;padding:.6rem 1.5rem !important;font-size:.95rem !important;font-weight:500 !important;transition:all .2s ease-in-out !important}
+        .swal2-confirm:hover{background-color:#2563eb !important;transform:scale(1.03)}
+        .swal2-cancel{background-color:transparent !important;color:#6b7280 !important;border:1px solid #d1d5db !important;border-radius:.5rem !important;padding:.6rem 1.5rem !important;font-size:.95rem !important;font-weight:500 !important;transition:all .2s ease-in-out !important}
+        .swal2-cancel:hover{background-color:#f9fafb !important;border-color:#9ca3af !important}
+        .swal-open-file-button { text-decoration: none !important; background-color: #3b82f6 !important; color: white !important; padding: 10px 18px !important; border-radius: 0.5rem !important; font-weight: 500 !important; font-size: 0.95rem !important; display: inline-block !important; margin: 5px !important; transition: all 0.2s ease-in-out !important; }
+        .swal-open-file-button:hover { background-color: #2563eb !important; transform: scale(1.03); }
+
+        /* '기존 고사 불러오기' 라디오 버튼 스타일 */
+        .swal-radio-container { margin-top: 1rem; width: 100%; max-height: 220px; overflow-y: auto; border: 1px solid #d1d5db; border-radius: 0.5rem; text-align: left; }
+        .swal-radio-label { display: block; padding: 0.8rem 1.25rem; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background-color 0.2s, color 0.2s; font-size: 0.9rem; color: #4b5563; }
+        .swal-radio-label:last-child { border-bottom: none; }
+        .swal-radio-label:hover { background-color: #f9fafb; }
+        .swal-radio-input { display: none; }
+        .swal-radio-input:checked + .swal-radio-label { background-color: #eff6ff; color: #1d4ed8; font-weight: 600; border-left: 4px solid #3b82f6; padding-left: calc(1.25rem - 4px); }
+        
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-md mx-auto space-y-3">
+        <div class="menu-group" id="menu-1">
+            <div class="menu-header" onclick="toggleMenu(this)">
+                <span class="menu-header-title"><span>⚙️</span><span>고사 기초설정</span></span>
+                <svg class="arrow-icon h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div class="submenu">
+                <div class="py-2">
+                    <button class="menu-button" onclick="google.script.run.showScheduleDialog()">
+                        <span class="step-badge">1</span> 🗓️ 시험일정 및 고사실
+                    </button>
+                    <button class="menu-button" onclick="google.script.run.showTeacherDialog()">
+                        <span class="step-badge">2</span> 🧑‍🏫 교사 기본 설정
+                    </button>
+                    <button class="menu-button" onclick="google.script.run.setupTeacherAvailabilityAndConfirm()">
+                        <span class="step-badge">3</span> ✅ 감독 가능일 설정
+                    </button>
+                    <div class="border-t border-slate-100 my-1 mx-4"></div>
+                    <button class="menu-button" onclick="google.script.run.showExclusionDialog()">🚫 제외 교사 설정</button>
+                    <button class="menu-button" onclick="google.script.run.showProctorSettingsDialog()">📝 감독 배정 세부 설정</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-group" id="menu-2">
+            <div class="menu-header" onclick="toggleMenu(this)">
+                <span class="menu-header-title"><span>🏫</span><span>감독 편성</span></span>
+                <svg class="arrow-icon h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div class="submenu"><div class="py-2">
+                <button class="menu-button" onclick="runAssignmentFromSidebar()">🚀 감독 배정 실행</button>
+                <button class="menu-button" onclick="google.script.run.showProctorSwapTableUI()">🔄 감독 배정 조정</button>
+                <button class="menu-button" onclick="google.script.run.showDailySheetPrintDialog()">🖨️ 일자별 시트 생성</button>
+            </div></div>
+        </div>
+
+        <div class="menu-group" id="menu-3">
+            <div class="menu-header" onclick="toggleMenu(this)">
+                <span class="menu-header-title"><span>🗂️</span><span>시험 기록 관리</span></span>
+                <svg class="arrow-icon h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div class="submenu"><div class="py-2">
+                <button class="menu-button" onclick="startSaveProcess()">💾 현재 고사 저장</button>
+                <button class="menu-button" onclick="startLoadProcess()">📂 기존 고사 불러오기</button>
+            </div></div>
+        </div>
+
+        <div class="menu-group" id="menu-4">
+            <div class="menu-header" onclick="toggleMenu(this)">
+                <span class="menu-header-title"><span>🗑️</span><span>설정 초기화</span></span>
+                <svg class="arrow-icon h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </div>
+            <div class="submenu"><div class="py-2">
+                <button class="menu-button" onclick="startTeacherReset()">↩️ 교사 설정 초기화</button>
+                <button class="menu-button" onclick="startFullReset()"> 🚮 모든 설정 초기화</button>
+            </div></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Toggles the visibility of a menu's submenu and rotates its arrow icon.
+         * Closes other open menus.
+         */
+        function toggleMenu(headerElement) {
+            const menuGroup = headerElement.parentElement;
+            const submenu = headerElement.nextElementSibling;
+            const arrow = headerElement.querySelector('.arrow-icon');
+            const isOpen = submenu.style.maxHeight;
+
+            document.querySelectorAll('.menu-group').forEach(group => {
+                if (group.id !== menuGroup.id) {
+                    const otherSubmenu = group.querySelector('.submenu');
+                    const otherArrow = group.querySelector('.arrow-icon');
+                    otherSubmenu.style.maxHeight = null;
+                    otherArrow.style.transform = 'rotate(0deg)';
+                }
+            });
+
+            if (isOpen) {
+                submenu.style.maxHeight = null;
+                arrow.style.transform = 'rotate(0deg)';
+            } else {
+                submenu.style.maxHeight = submenu.scrollHeight + "px";
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        }
+
+        // Common custom classes for SweetAlert modals
+        const swalCustomClasses = {
+            popup:'swal2-popup', title:'swal2-title', htmlContainer:'swal2-html-container',
+            input:'swal2-input', actions:'swal2-actions', confirmButton:'swal2-confirm', cancelButton:'swal2-cancel'
+        };
+
+        // --- '현재 고사 저장' Functions ---
+        function startSaveProcess() {
+            Swal.fire({
+                title: '고사 정보 저장',
+                html: "저장할 고사명을 입력하세요.<br>(예: 2025년 1학기 중간고사)",
+                input: 'text',
+                inputPlaceholder: '고사명 입력',
+                showCancelButton: true,
+                confirmButtonText: '저장',
+                cancelButtonText: '취소',
+                customClass: swalCustomClasses,
+                buttonsStyling: false,
+                inputValidator: (value) => {
+                    if (!value || value.trim() === '') {
+                        return '고사명을 입력해야 합니다!'
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const fileName = result.value;
+                    Swal.fire({
+                        title: '고사정보 저장중...',
+                        text: '잠시만 기다려주세요.',
+                        allowOutsideClick: false,
+                        customClass: swalCustomClasses,
+                        didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }
+                    });
+                    google.script.run.withSuccessHandler(onSaveSuccess).withFailureHandler(onSaveFailure).archiveCurrentSpreadsheet(fileName);
+                }
+            });
+        }
+
+        function onSaveSuccess(fileInfo) {
+            Swal.fire({
+                icon: 'success',
+                iconColor: '#3b82f6',
+                title: '저장 완료!',
+                html: `<b>'${fileInfo.name}'</b>(으)로 고사 정보가<br>안전하게 저장되었습니다.<br><br>` +
+                      `<a href="${fileInfo.url}" target="_blank" class="swal-open-file-button">저장된 파일 열기</a>`,
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: '확인',
+                customClass: swalCustomClasses,
+                buttonsStyling: false
+            });
+        }
+
+        function onSaveFailure(error) {
+            Swal.fire({ icon: 'error', title: '저장 실패', text: error.message, customClass: swalCustomClasses, buttonsStyling: false });
+        }
+        
+        // --- '기존 고사 불러오기' Functions ---
+        function startLoadProcess() {
+            Swal.fire({
+                title: '기록을 불러오는 중...',
+                allowOutsideClick: false,
+                customClass: swalCustomClasses,
+                didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }
+            });
+            google.script.run.withSuccessHandler(showArchivedFileList).withFailureHandler(onLoadFailure).getArchivedFileList();
+        }
+
+        function showArchivedFileList(fileList) {
+            if (!fileList || fileList.length === 0) {
+                Swal.fire({ icon: 'info', title: '알림', text: '저장된 고사 파일이 없습니다.', customClass: swalCustomClasses, buttonsStyling: false });
+                return;
+            }
+            
+            const fileOptionsHTML = fileList.map((file, index) => `
+                <div>
+                    <input type="radio" id="file-${index}" name="file-radio" value="${file.id}" class="swal-radio-input" ${index === 0 ? 'checked' : ''}>
+                    <label for="file-${index}" class="swal-radio-label">${file.name}</label>
+                </div>
+            `).join('');
+            
+            Swal.fire({
+                title: '고사 불러오기', 
+                width: '520px',
+                html: `
+                    <p style="margin-bottom: 0.5rem;">불러올 고사명을 선택하세요.</p>
+                    <div class="swal-radio-container">
+                        ${fileOptionsHTML}
+                    </div>
+                `,
+                confirmButtonText: '불러오기',
+                showCancelButton: true,
+                cancelButtonText: '취소',
+                customClass: swalCustomClasses,
+                buttonsStyling: false,
+                preConfirm: () => {
+                    const selectedFile = document.querySelector('input[name="file-radio"]:checked');
+                    if (!selectedFile) {
+                        Swal.showValidationMessage('불러올 고사를 선택해주세요.');
+                        return false;
+                    }
+                    return selectedFile.value;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    executeLoadSettings(result.value);
+                }
+            });
+        }
+        
+        function executeLoadSettings(fileId) {
+            Swal.fire({
+                title: '설정을 적용하는 중...',
+                text: '선택한 파일의 설정으로 현재 시트를 업데이트합니다.',
+                allowOutsideClick: false,
+                customClass: swalCustomClasses,
+                didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }
+            });
+
+            google.script.run
+                .withSuccessHandler(onLoadSettingsSuccess)
+                .withFailureHandler(onLoadFailure)
+                .loadSettingsFromArchivedFile(fileId);
+        }
+
+        function onLoadSettingsSuccess(successMessage) {
+            Swal.fire({
+                icon: 'success',
+                title: '불러오기 완료!',
+                text: successMessage,
+                customClass: swalCustomClasses,
+                buttonsStyling: false
+            });
+        }
+        
+        function onLoadFailure(error) { 
+            Swal.fire({ icon: 'error', title: '불러오기 실패', text: error.message, customClass: swalCustomClasses, buttonsStyling: false });
+        }
+
+        // --- Proctor Assignment and Reset Functions ---
+        function runAssignmentFromSidebar() {
+            Swal.fire({
+                title: '감독 배정을 시작합니다',
+                text: "기존에 생성된 감독 배정 시트는 삭제되고 새로운 시트가 작성됩니다. 계속하시겠습니까?",
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: '예', cancelButtonText: '취소',
+                customClass: swalCustomClasses, buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeAssignment();
+                }
+            });
+        }
+        
+        function executeAssignment() {
+            Swal.fire({
+                title: '감독 배정 중입니다...', text: '일정 및 교사 정보를 분석하여 감독을 배정하고 있습니다.',
+                allowOutsideClick: false, customClass: swalCustomClasses,
+                didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }
+            });
+            google.script.run
+                .withSuccessHandler(showAssignmentResult)
+                .withFailureHandler(showAssignmentError)
+                .runAssignmentAndGetMessage();
+        }
+
+        function showAssignmentResult(message) {
+            Swal.fire({
+                icon: 'success', title: '감독 배정 완료!',
+                html: `<div style="text-align: left; white-space: pre-wrap;">${message}</div>`,
+                confirmButtonText: '확인', customClass: swalCustomClasses, buttonsStyling: false
+            });
+        }
+        function showAssignmentError(error) {
+            Swal.fire({ icon: 'error', title: '감독 배정 오류', text: error.message, customClass: swalCustomClasses, buttonsStyling: false });
+        }
+
+        function startTeacherReset() {
+            Swal.fire({
+                title: '교사 설정을 초기화하시겠습니까?',
+                text: "저장된 교사설정이 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: '예', cancelButtonText: '취소',
+                customClass: swalCustomClasses, buttonsStyling: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: '초기화 중...', allowOutsideClick: false, customClass: swalCustomClasses, didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }});
+                    google.script.run
+                        .withSuccessHandler(showResetSuccess)
+                        .withFailureHandler(showResetError)
+                        .resetTeacherAndExclusionSettings();
+                }
+            });
+        }
+        
+        function startFullReset() {
+            Swal.fire({
+                title: '정말 모든 설정을 초기화하시겠습니까?',
+                text: "저장된 모든 설정(일정,교사설정,세부설정)이 삭제되며, 복구할 수 없습니다.",
+                icon: 'error', showCancelButton: true,
+                confirmButtonText: '예', cancelButtonText: '취소',
+                customClass: swalCustomClasses, buttonsStyling: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: '모든 데이터를 초기화하는 중...', allowOutsideClick: false, customClass: swalCustomClasses, didOpen: () => { Swal.showLoading(Swal.getConfirmButton()); }});
+                    google.script.run
+                        .withSuccessHandler(showResetSuccess)
+                        .withFailureHandler(showResetError)
+                        .resetAllSettings();
+                }
+            });
+        }
+        
+        function showResetSuccess(message) {
+            Swal.fire({
+                icon: 'success', title: '초기화 완료!', text: message,
+                customClass: swalCustomClasses, buttonsStyling: false, confirmButtonText: '확인'
+            });
+        }
+        
+        function showResetError(error) {
+            Swal.fire({
+                icon: 'error', title: '초기화 오류', text: error.message,
+                customClass: swalCustomClasses, buttonsStyling: false, confirmButtonText: '확인'
+            });
+        }
+    </script>
+</body>
+</html>

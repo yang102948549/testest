@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; 
+            background-color: #f2f2f7; 
+            color: #000; 
+            margin: 0; padding: 0;
+        }
+
+        #apple-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 30000;
+        }
+        .apple-alert {
+            background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px;
+            overflow: hidden; display: flex; flex-direction: column; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+        }
+        @keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .apple-alert-content { padding: 20px 16px; text-align: center; }
+        .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+        .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+        .apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); height: 44px; align-items: stretch; }
+        .apple-btn { 
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 0; font-size: 17px; background: transparent; border: none;
+            color: #007AFF; cursor: pointer; outline: none; margin: 0;
+        }
+        .apple-btn:active, .apple-btn:hover { background: rgba(0, 0, 0, 0.05) !important; }
+        .apple-btn-bold { font-weight: 600; }
+        .apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+
+        .ui-datepicker { 
+            width: 280px !important; padding: 16px !important; background: #fff !important; 
+            border-radius: 20px !important; border: 1px solid #e5e5ea !important; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08) !important; z-index: 9999 !important; 
+            font-family: -apple-system, sans-serif !important;
+        }
+        .ui-datepicker-header { background: transparent !important; border: none !important; padding: 0 !important; margin-bottom: 12px !important; }
+        .ui-datepicker-title { font-weight: 700 !important; color: #000 !important; font-size: 16px !important; }
+        .ui-datepicker .ui-datepicker-prev, .ui-datepicker .ui-datepicker-next { top: 2px !important; cursor: pointer !important; border-radius: 50% !important; background-color: #f2f2f7 !important; border: none !important; transition: 0.2s !important; }
+        .ui-datepicker .ui-datepicker-prev:hover, .ui-datepicker .ui-datepicker-next:hover { background-color: #e5e5ea !important; }
+        .ui-datepicker th { color: #8e8e93 !important; font-weight: 600 !important; font-size: 12px !important; }
+        .ui-datepicker td span, .ui-datepicker td a { 
+            display: flex !important; align-items: center !important; justify-content: center !important;
+            width: 32px !important; height: 32px !important; margin: 0 auto !important;
+            border-radius: 50% !important; text-decoration: none !important; color: #000 !important;
+            font-size: 14px !important; font-weight: 500 !important; transition: 0.2s !important; border: none !important; background: transparent !important;
+        }
+        .ui-datepicker td a:hover { background: #f2f2f7 !important; }
+        .ui-datepicker td a.ui-state-active { background-color: #007AFF !important; color: #fff !important; font-weight: 700 !important; box-shadow: 0 2px 6px rgba(0, 122, 255, 0.3) !important; }
+
+        .main-container { max-width: 1100px; margin: 2rem auto; background: white; padding: 2.5rem; border-radius: 32px; border: 1px solid #e5e5ea; }
+        
+        .chip-input { 
+            background: #ffffff; color: #1d1d1f; font-weight: 500; text-align: center;
+            border-radius: 10px; border: 1px solid #d1d1d6; outline: none; transition: all 0.2s; 
+            width: 100%; padding: 8px 12px; font-size: 14px;
+        }
+        .chip-input:hover { border-color: #007AFF; }
+        .chip-input:focus { background: #fff; border-color: #007AFF; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
+        .chip-input::placeholder { color: #8e8e93; font-weight: 400; }
+
+        .delete-btn-overlay { 
+            position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: #ff3b30; color: white;
+            border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 12px; 
+            font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(255, 59, 48, 0.3);
+        }
+        .group:hover .delete-btn-overlay { display: flex; }
+
+        .apple-table { width: 100%; border-collapse: collapse; }
+        .apple-table th { color: #8e8e93; font-weight: 600; font-size: 13px; padding: 12px 8px; border-bottom: 1px solid #e5e5ea; }
+        .apple-table td { border-bottom: 1px solid #f2f2f7; padding: 8px; vertical-align: top; }
+        .apple-table tr:last-child td { border-bottom: none; }
+        
+        .schedule-cell { 
+            min-height: 70px; border-radius: 14px; padding: 6px; cursor: pointer;
+            display: flex; flex-direction: column; gap: 6px; transition: 0.2s; border: 1px dashed transparent;
+        }
+        .schedule-cell:hover { background: #f9f9fb; border-color: #d1d1d6; }
+        
+        .subject-card { 
+            background: #eff6ff; border-radius: 10px; padding: 6px 12px; display: flex; 
+            justify-content: space-between; align-items: center; position: relative;
+        }
+        .subject-card:hover { background: #e0efff; }
+        .subject-title { font-size: 14px; font-weight: 700; color: #007AFF; }
+        .subject-badge { background: #fff; color: #8e8e93; font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .subject-badge-none { background: #fff0f0; color: #ff3b30; }
+
+        .picker-modal-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+            display: none; align-items: center; justify-content: center; z-index: 20000;
+        }
+        .picker-box {
+            background: white; width: 90%; max-width: 450px; border-radius: 24px; padding: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 85vh;
+        }
+        
+        .room-checkbox { display: none !important; }
+        .room-label { 
+            cursor: pointer; padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; 
+            background: #f2f2f7; color: #8e8e93; transition: all 0.2s; display: inline-block; user-select: none;
+        }
+        .room-label:hover { background: #e5e5ea; }
+        .room-checkbox:checked + .room-label { background: #007AFF; color: #fff; box-shadow: 0 4px 10px rgba(0, 122, 255, 0.25); }
+
+        .modal-subject-row { background: #f9f9fb; border: 1px solid #e5e5ea; border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; }
+
+        .apple-save-btn {
+            background: linear-gradient(180deg, #007AFF 0%, #0066CC 100%) !important;
+            color: white !important; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .apple-save-btn:hover {
+            background: linear-gradient(180deg, #1A85FF 0%, #007AFF 100%) !important;
+            transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4) !important; opacity: 1 !important;
+        }
+        .apple-save-btn:active { transform: translateY(0) !important; opacity: 0.9 !important; }
+
+        #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10001; }
+        .spinner { animation: spin 1s linear infinite; border: 3px solid #d1d1d6; border-top-color: #007AFF; width: 32px; height: 32px; border-radius: 50%; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="apple-modal-overlay">
+        <div class="apple-alert">
+            <div class="apple-alert-content">
+                <div id="apple-title" class="apple-alert-title"></div>
+                <div id="apple-text" class="apple-alert-text"></div>
+            </div>
+            <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+        </div>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p class="text-[#8e8e93] font-medium text-sm mt-3">일정 데이터를 동기화 중...</p>
+    </div>
+
+    <div class="main-container shadow-sm">
+        <div class="mb-10">
+            <h2 class="text-2xl font-bold tracking-tight">시험일정 및 고사실 설정</h2>
+            <p class="text-[#8e8e93] font-medium mt-1">시험일정 및 고사실, 과목을 설정하세요.</p>
+        </div>
+
+        <div class="mb-12">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-[#eff6ff] text-[#007AFF] flex items-center justify-center text-sm">1</span>
+                학년별 고사실 설정
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#f9f9fb] p-6 rounded-3xl border border-[#e5e5ea]">
+                <script>
+                    [1,2,3].forEach(g => {
+                        document.write(`
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="font-bold text-[#000]">${g}학년</span>
+                                <button onclick="addRoom(${g})" class="text-[#007AFF] bg-white border border-[#d1d1d6] rounded-lg px-2 py-1 shadow-sm text-xs font-bold transition hover:bg-[#f2f2f7]">+ 추가</button>
+                            </div>
+                            <div id="grade-${g}-rooms-container" class="flex flex-wrap gap-2"></div>
+                        </div>`);
+                    });
+                </script>
+            </div>
+        </div>
+
+        <div class="pt-8 border-t border-[#e5e5ea] mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-full bg-[#eff6ff] text-[#007AFF] flex items-center justify-center text-sm">2</span>
+                    날짜별 시험 계획
+                </h3>
+                <button onclick="addDateCard()" class="px-5 py-2.5 bg-[#f2f2f7] text-[#007AFF] rounded-xl text-sm font-bold hover:bg-[#e5e5ea] transition">
+                    + 날짜 추가
+                </button>
+            </div>
+            <div id="date-cards-container" class="space-y-6"></div>
+        </div>
+
+        <div class="pt-8 border-t border-[#e5e5ea] mb-12">
+            <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-[#eff6ff] text-[#007AFF] flex items-center justify-center text-sm">3</span>
+                기타 감독 위치
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#f9f9fb] p-6 rounded-3xl border border-[#e5e5ea]">
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold">복도 감독</span>
+                        <button onclick="addHallway()" class="text-[#007AFF] bg-white border border-[#d1d1d6] rounded-lg px-2 py-1 shadow-sm text-xs font-bold transition hover:bg-[#f2f2f7]">+ 추가</button>
+                    </div>
+                    <div id="hallways-container" class="flex flex-wrap gap-2"></div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-bold">특별실 감독</span>
+                        <button onclick="addSpecialRoom()" class="text-[#007AFF] bg-white border border-[#d1d1d6] rounded-lg px-2 py-1 shadow-sm text-xs font-bold transition hover:bg-[#f2f2f7]">+ 추가</button>
+                    </div>
+                    <div id="special-rooms-container" class="flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-8 border-t border-[#e5e5ea]">
+            <button onclick="validateAndSave()" class="w-full py-5 apple-save-btn text-white font-bold rounded-2xl text-xl transition">
+                설정 저장 및 다음 단계로
+            </button>
+        </div>
+    </div>
+
+    <div id="subject-modal" class="picker-modal-bg">
+        <div class="picker-box">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">과목 / 고사실 설정</h3>
+                <button onclick="closeModal()" class="text-[#8e8e93] text-2xl font-light hover:text-[#ff3b30]">&times;</button>
+            </div>
+            <p id="modal-subtitle" class="text-sm font-bold text-[#007AFF] bg-[#eff6ff] py-1 px-3 rounded-lg self-start mb-4"></p>
+            <div id="modal-subject-list" class="overflow-y-auto pr-1 max-h-[40vh] mb-4"></div>
+            <button onclick="addSubjectRowToModal()" class="w-full py-3 border border-dashed border-[#d1d1d6] text-[#8e8e93] rounded-xl font-bold hover:bg-[#f2f2f7] transition mb-4">
+                + 과목 행 추가
+            </button>
+            <div class="flex gap-2">
+                <button onclick="closeModal()" class="flex-1 py-3 bg-[#f2f2f7] rounded-xl font-bold text-[#000]">취소</button>
+                <button onclick="saveModalSubjects()" class="flex-1 py-3 bg-[#007AFF] text-white rounded-xl font-bold shadow-md">적용완료</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let state = { dates: [], datePeriods: {}, subjects: {}, grade1Rooms: [], grade2Rooms: [], grade3Rooms: [], specialRooms: [], hallways: [] };
+    let activeModal = { d: null, p: null, g: null };
+
+    $(function() {
+        if (typeof google !== 'undefined' && google.script) {
+            google.script.run
+                .withSuccessHandler(data => { processLoadedData(data); render(); $('#loading-overlay').fadeOut(300); })
+                .getSavedScheduleData();
+        } else {
+            state.dates = [generateTempKey(), generateTempKey()];
+            state.datePeriods[state.dates[0]] = 3;
+            state.datePeriods[state.dates[1]] = 3;
+            render();
+            $('#loading-overlay').hide();
+        }
+    });
+
+    function generateTempKey() { return "__temp_" + Math.random().toString(36).substr(2, 9); }
+
+    function processLoadedData(data) {
+    if (!data) return;
+    const parseRooms = (g) => (data['grade'+g+'Rooms'] && data['grade'+g+'Rooms'].length > 0)
+        ? data['grade'+g+'Rooms']
+        : Array.from({length: data['grade'+g+'Classes']||0}, (_,i) => g+'-'+(i+1));
+
+    const subs = data.subjects || {};
+    Object.keys(subs).forEach(d => Object.keys(subs[d]).forEach(p => Object.keys(subs[d][p]).forEach(g => {
+        let val = subs[d][p][g];
+        // 구버전 호환: 문자열 또는 단일 객체 형식 처리
+        if (!Array.isArray(val)) val = (typeof val === 'string') ? [{name: val, rooms: null}] : (val ? [val] : []);
+        // ✅ 구버전 [] → null(전체선택)로만 마이그레이션
+        // "none"(전체해제)과 [...](일부선택)은 건드리지 않음
+        val = val.map(s => ({
+            ...s,
+            rooms: (Array.isArray(s.rooms) && s.rooms.length === 0) ? null : (s.rooms ?? null)
+        }));
+        subs[d][p][g] = val;
+    })));
+
+    const dates = data.dates || [];
+    const datePeriods = {};
+    if (dates.length === 0) { dates.push(generateTempKey()); dates.push(generateTempKey()); }
+    dates.forEach((d, i) => {
+        if (d === '') dates[i] = generateTempKey();
+        datePeriods[dates[i]] = data.datePeriods ? (data.datePeriods[dates[i]] || data.periods || 3) : (data.periods || 3);
+    });
+
+    state = {
+        dates, datePeriods, subjects: subs,
+        grade1Rooms: parseRooms(1), grade2Rooms: parseRooms(2), grade3Rooms: parseRooms(3),
+        specialRooms: data.specialRooms || [], hallways: data.hallways || []
+    };
+}
+
+    function render() {
+        [1,2,3].forEach(g => {
+            const $cont = $(`#grade-${g}-rooms-container`).empty();
+            state[`grade${g}Rooms`].forEach((r, i) => {
+                $cont.append(`
+                    <div class="relative group w-24">
+                        <input type="text" class="chip-input" value="${r}" placeholder="반 입력" onchange="updateRoomName(${g}, ${i}, this.value)">
+                        <div class="delete-btn-overlay" onclick="deleteRoom(${g}, ${i})">&times;</div>
+                    </div>`);
+            });
+        });
+
+        const $cardsCont = $('#date-cards-container').empty();
+        state.dates.forEach((d) => {
+            const pCount = state.datePeriods[d] || 3;
+            const displayDate = d.startsWith("__temp_") ? "" : convertYYYYMMDDToKoreanDate(d);
+
+            let cardHtml = `
+            <div class="bg-white rounded-[24px] border border-[#e5e5ea] p-6 shadow-sm relative">
+                <button onclick="deleteDateCard('${d}')" class="absolute top-4 right-4 w-8 h-8 bg-[#f2f2f7] text-[#8e8e93] rounded-full flex items-center justify-center hover:bg-[#ff3b30] hover:text-white transition font-bold">&times;</button>
+                <div class="flex items-center gap-4 mb-4">
+                    <input type="text" class="date-input font-bold text-xl text-[#000] border-b-2 border-transparent focus:border-[#007AFF] outline-none pb-1 w-48 transition" data-key="${d}" value="${displayDate}" placeholder="날짜 클릭하여 선택">
+                    <button onclick="addPeriodToDate('${d}')" class="text-xs font-bold text-[#007AFF] bg-[#eff6ff] px-3 py-1.5 rounded-lg hover:bg-[#e0efff]">+ 교시</button>
+                    <button onclick="deletePeriodFromDate('${d}')" class="text-xs font-bold text-[#8e8e93] bg-[#f2f2f7] px-3 py-1.5 rounded-lg hover:bg-[#e5e5ea]">- 교시</button>
+                </div>
+                <table class="apple-table">
+                    <thead><tr>
+                        <th class="w-16 text-center">교시</th>
+                        <th class="w-[30%] text-center">1학년</th>
+                        <th class="w-[30%] text-center">2학년</th>
+                        <th class="w-[30%] text-center">3학년</th>
+                    </tr></thead>
+                    <tbody>`;
+
+            for (let p = 1; p <= pCount; p++) {
+                cardHtml += `<tr><td class="text-center font-bold text-[#8e8e93] align-middle">${p}</td>`;
+                [1,2,3].forEach(g => {
+                    const subArray = (state.subjects[d] && state.subjects[d]['period'+p])
+                        ? (state.subjects[d]['period'+p]['grade'+g] || []) : [];
+                    const validSubs = subArray.filter(s => s.name.trim() !== '');
+                    cardHtml += `<td><div class="schedule-cell" onclick="openModal('${d}', ${p}, ${g})">`;
+                    if (validSubs.length > 0) {
+                        validSubs.forEach((s, idx) => {
+    const gradeRooms = state[`grade${g}Rooms`];
+    let badgeText, badgeClass;
+
+    if (s.rooms === null) {
+        // ✅ null → 전체선택
+        badgeText = gradeRooms.length + '실';
+        badgeClass = 'subject-badge';
+    } else if (s.rooms === 'none') {
+        // ✅ "none" → 전체해제(0실)
+        badgeText = '0실';
+        badgeClass = 'subject-badge subject-badge-none';
+    } else {
+        // ✅ [...] → 일부선택
+        badgeText = s.rooms.length + '실';
+        badgeClass = 'subject-badge';
+    }
+
+    cardHtml += `
+        <div class="subject-card group">
+            <span class="subject-title">${s.name}</span>
+            <span class="${badgeClass}">${badgeText}</span>
+            <div class="delete-btn-overlay" style="right:-8px; top:-8px; width:20px; height:20px;" onclick="event.stopPropagation(); deleteSubject('${d}', ${p}, ${g}, ${idx})">&times;</div>
+        </div>`;
+});
+                    } else {
+                        cardHtml += `<div class="w-full h-full min-h-[46px] flex items-center justify-center rounded-[10px] border border-dashed border-[#d2d2d7] bg-[#fbfbfd] text-[#86868b] text-[13px] font-bold hover:bg-[#f5f5f7] hover:text-[#007AFF] hover:border-[#007AFF] transition">+ 과목명</div>`;
+                    }
+                    cardHtml += `</div></td>`;
+                });
+                cardHtml += `</tr>`;
+            }
+            cardHtml += `</tbody></table></div>`;
+            $cardsCont.append(cardHtml);
+        });
+
+        $('#special-rooms-container').empty();
+        state.specialRooms.forEach((v, i) => {
+            $('#special-rooms-container').append(`
+                <div class="relative group w-32">
+                    <input type="text" class="chip-input" value="${v}" placeholder="특별실 입력" onchange="state.specialRooms[${i}]=this.value">
+                    <div class="delete-btn-overlay" onclick="deleteSpecial(${i})">&times;</div>
+                </div>`);
+        });
+
+        $('#hallways-container').empty();
+        state.hallways.forEach((v, i) => {
+            $('#hallways-container').append(`
+                <div class="relative group w-32">
+                    <input type="text" class="chip-input" value="${v}" placeholder="구역 입력" onchange="state.hallways[${i}]=this.value">
+                    <div class="delete-btn-overlay" onclick="deleteHallway(${i})">&times;</div>
+                </div>`);
+        });
+
+        initDatePicker();
+    }
+
+    function initDatePicker() {
+        $('.date-input').datepicker({
+            monthNames: ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'],
+            dayNamesMin: ['일','월','화','수','목','금','토'],
+            dateFormat: "yy년 mm월 dd일", showMonthAfterYear: true, yearSuffix: '년',
+            onSelect: function(dateText) {
+                const oldKey = $(this).data('key'), newKey = convertKoreanDateToYYYYMMDD(dateText);
+                if (oldKey !== newKey) {
+                    state.subjects[newKey] = state.subjects[oldKey] || {};
+                    state.datePeriods[newKey] = state.datePeriods[oldKey] || 3;
+                    const idx = state.dates.indexOf(oldKey);
+                    if (idx > -1) state.dates[idx] = newKey;
+                    delete state.subjects[oldKey];
+                    delete state.datePeriods[oldKey];
+                    render();
+                }
+            }
+        });
+    }
+
+    function convertKoreanDateToYYYYMMDD(k) {
+        if (!k) return '';
+        const m = k.match(/(\d{4})년 (\d{2})월 (\d{2})일/);
+        return m ? m[1]+'-'+m[2]+'-'+m[3] : k;
+    }
+    function convertYYYYMMDDToKoreanDate(y) {
+        if (!y) return '';
+        const p = y.split('-');
+        return p.length === 3 ? p[0]+'년 '+p[1]+'월 '+p[2]+'일' : y;
+    }
+
+    window.deleteSubject = (d, p, g, idx) => {
+        if (state.subjects[d] && state.subjects[d]['period'+p] && state.subjects[d]['period'+p]['grade'+g]) {
+            state.subjects[d]['period'+p]['grade'+g].splice(idx, 1); render();
+        }
+    };
+    window.addDateCard = () => { const k = generateTempKey(); state.dates.push(k); state.datePeriods[k] = 3; render(); };
+    window.deleteDateCard = (k) => {
+        if (state.dates.length <= 1) return appleAlert('알림', '최소 1개의 날짜는 필요합니다.', null, false);
+        state.dates = state.dates.filter(d => d !== k);
+        delete state.subjects[k]; delete state.datePeriods[k]; render();
+    };
+    window.addPeriodToDate = (k) => { state.datePeriods[k] = (state.datePeriods[k] || 0) + 1; render(); };
+    window.deletePeriodFromDate = (k) => {
+        if (state.datePeriods[k] > 1) {
+            const p = state.datePeriods[k];
+            if (state.subjects[k] && state.subjects[k]['period'+p]) delete state.subjects[k]['period'+p];
+            state.datePeriods[k]--; render();
+        }
+    };
+
+    // ✅ openModal: rooms 값을 그대로 전달 (null/[]/[...] 구분 유지)
+    function openModal(d, p, g) {
+    activeModal = { d, p, g };
+    const dateLabel = d.startsWith('__temp_') ? '날짜 미정' : convertYYYYMMDDToKoreanDate(d);
+    $('#modal-subtitle').text(`${dateLabel} · ${p}교시 · ${g}학년`);
+    const subArray = (state.subjects[d] && state.subjects[d]['period'+p] && state.subjects[d]['period'+p]['grade'+g])
+        ? state.subjects[d]['period'+p]['grade'+g] : [];
+    $('#modal-subject-list').empty();
+    if (subArray.length === 0) {
+        addSubjectRowToModal('', null);         // null = 신규, 전체 체크
+    } else {
+        subArray.forEach(s => addSubjectRowToModal(s.name, s.rooms));
+        // null  → 전체체크
+        // "none" → 전체미체크
+        // [...]  → 일부체크
+    }
+    $('#subject-modal').css('display', 'flex');
+}
+
+    window.addSubjectRowToModal = (name = '', selectedRooms = null) => {
+    // selectedRooms 의미:
+    //   null   → 신규/전체선택 → 전체 체크
+    //   "none" → 전체해제     → 전체 미체크
+    //   [...]  → 일부선택     → 해당 항목만 체크
+    const g = activeModal.g; if (!g) return;
+    const globalRooms = state['grade' + g + 'Rooms'];
+    const rowId = 'row_' + Math.random().toString(36).substr(2, 9);
+
+    const roomsHtml = globalRooms.map((r, i) => {
+        // ✅ null이면 전체 체크, "none"이면 전체 미체크, 배열이면 포함 여부로 체크
+        const isChecked = (selectedRooms === null
+            || (Array.isArray(selectedRooms) && selectedRooms.includes(r))) ? 'checked' : '';
+        const cbId = 'cb_' + rowId + '_' + i;
+        return `<div class="inline-block m-0.5"><input type="checkbox" id="${cbId}" class="room-checkbox" value="${r}" ${isChecked}><label for="${cbId}" class="room-label">${r}</label></div>`;
+    }).join('');
+
+    $('#modal-subject-list').append(`
+        <div class="modal-subject-row">
+            <div class="flex items-center gap-2 mb-1">
+                <input type="text"
+                    class="flex-1 text-lg font-bold bg-transparent border-b border-[#d1d1d6] pb-2 outline-none focus:border-[#007AFF] transition"
+                    style="-webkit-appearance:none; appearance:none;"
+                    placeholder="과목명 입력  예) 물리 / 물리,화학"
+                    value="${name}">
+                <button onclick="$(this).closest('.modal-subject-row').remove()" class="text-[#8e8e93] text-xl font-light hover:text-[#ff3b30] flex-shrink-0 pb-1">&times;</button>
+            </div>
+            <p class="text-[11px] text-[#8e8e93] mb-3 leading-relaxed">
+                한 고사실 내 복수과목 실시 시 <b class="text-[#007AFF]">쉼표(,) 또는 슬래시(/)</b>로 구분 작성해주세요.
+            </p>
+            <div class="text-xs font-bold text-[#8e8e93] mb-2">적용 고사실 (클릭하여 선택/해제)</div>
+            <div class="flex flex-wrap gap-1">${roomsHtml}</div>
+        </div>`);
+
+    const listEl = document.getElementById('modal-subject-list');
+    listEl.scrollTop = listEl.scrollHeight;
+};
+
+    // ✅ saveModalSubjects: 전체선택→null, 전체해제→[], 일부선택→[...] 로 저장
+    window.saveModalSubjects = () => {
+    const {d, p, g} = activeModal;
+    const newArray = [];
+    const gLen = state['grade'+g+'Rooms'].length;
+    $('#modal-subject-list .modal-subject-row').each(function() {
+        const name = $(this).find('input[type="text"]').val().trim();
+        const checked = [];
+        $(this).find('.room-checkbox:checked').each(function() { checked.push($(this).val()); });
+        if (name) {
+            let rooms;
+            if (checked.length === gLen) {
+                rooms = null;       // ✅ 전체선택 → null
+            } else if (checked.length === 0) {
+                rooms = 'none';     // ✅ 전체해제 → "none"
+            } else {
+                rooms = checked;    // ✅ 일부선택 → [...]
+            }
+            newArray.push({ name, rooms });
+        }
+    });
+    if (!state.subjects[d]) state.subjects[d] = {};
+    if (!state.subjects[d]['period'+p]) state.subjects[d]['period'+p] = {};
+    state.subjects[d]['period'+p]['grade'+g] = newArray;
+    closeModal(); render();
+};
+
+    function closeModal() { $('#subject-modal').hide(); }
+
+    window.addRoom = (g) => { state['grade'+g+'Rooms'].push(g+'-'+(state['grade'+g+'Rooms'].length+1)); render(); };
+    window.deleteRoom = (g, i) => { state['grade'+g+'Rooms'].splice(i, 1); render(); };
+    window.updateRoomName = (g, i, val) => { state['grade'+g+'Rooms'][i] = val; };
+    window.addSpecialRoom = () => { state.specialRooms.push(""); render(); };
+    window.deleteSpecial = (i) => { state.specialRooms.splice(i, 1); render(); };
+    window.addHallway = () => { state.hallways.push(""); render(); };
+    window.deleteHallway = (i) => { state.hallways.splice(i, 1); render(); };
+
+    function appleAlert(title, text, onConfirm = null, showCancel = true) {
+        $('#apple-title').text(title); $('#apple-text').html(text);
+        const $btns = $('#apple-buttons-container').empty();
+        if (showCancel) {
+            $btns.append(`<button id="apple-btn-cancel" class="apple-btn">취소</button><button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">확인</button>`);
+            $('#apple-btn-cancel').on('click', () => $('#apple-modal-overlay').hide());
+        } else {
+            $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold w-full">확인</button>`);
+        }
+        $('#apple-btn-confirm').on('click', () => { $('#apple-modal-overlay').hide(); if (onConfirm) onConfirm(); });
+        $('#apple-modal-overlay').css('display', 'flex');
+    }
+
+    function validateAndSave() {
+        appleAlert('설정을 저장하시겠습니까?', '저장 후 교사 기본 정보 설정 단계로 이동합니다.', () => {
+            $('#loading-overlay').show();
+            state.periods = Math.max(1, ...Object.values(state.datePeriods));
+            state.dates = state.dates.filter(d => !d.startsWith("__temp_"));
+            state.specialRooms = $('#special-rooms-container input').map(function(){ return this.value; }).get();
+            state.hallways = $('#hallways-container input').map(function(){ return this.value; }).get();
+            google.script.run
+                .withSuccessHandler(s => {
+                    if (s) console.log('화면 전환 중');
+                    else { $('#loading-overlay').hide(); appleAlert('에러', '저장 실패', null, false); }
+                })
+                .saveScheduleAndShowTeacherSetup(state);
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif;
+    background-color: #f5f5f7; 
+    color: #1d1d1f;
+    margin: 0; padding: 0;
+}
+
+/* ==========================================================
+   1. Apple 시스템 스타일 커스텀 알림창 
+   ========================================================== */
+#apple-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: none; align-items: center; justify-content: center; z-index: 30000;
+}
+.apple-alert {
+    background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+}
+@keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.apple-alert-content { padding: 20px 16px; text-align: center; }
+.apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; color: #000; }
+.apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+
+.apple-alert-buttons { 
+    display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); height: 44px; align-items: stretch; 
+}
+.apple-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 0; font-size: 17px; background: transparent; border: none;
+    color: #007AFF; cursor: pointer; outline: none; margin: 0;
+}
+.apple-btn:active, .apple-btn:hover { background-color: rgba(0, 0, 0, 0.05) !important; }
+.apple-btn-bold { font-weight: 600; }
+.apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+
+/* ==========================================================
+   2. 기능성 피커 모달 (과목/학급 선택)
+   ========================================================== */
+.picker-modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.3); backdrop-filter: blur(5px);
+    display: none; align-items: center; justify-content: center; z-index: 20000;
+}
+.picker-box {
+    background: white; width: 90%; max-width: 450px; border-radius: 24px; padding: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; max-height: 85vh;
+}
+.grid-btn {
+    padding: 10px; border-radius: 12px; font-size: 14px; font-weight: 600;
+    background: #f2f2f7; color: #8e8e93; border: 1px solid transparent; transition: 0.2s;
+}
+.grid-btn.selected { background: #007AFF; color: white; border-color: #007AFF; box-shadow: 0 4px 10px rgba(0,122,255,0.2); }
+.tab-btn { flex: 1; padding: 8px; font-size: 13px; font-weight: 700; border-radius: 8px; color: #8e8e93; }
+.tab-btn.active { background: white; color: #000; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+/* ==========================================================
+   3. 메인 테이블 및 UI 요소 (14px 폰트 및 간결한 라인)
+   ========================================================== */
+.main-container { max-width: 1200px; margin: 2rem auto; background: white; padding: 2.5rem; border-radius: 30px; border: 1px solid #e5e5ea; }
+.teacher-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.teacher-table th { background: #fbfbfd; color: #86868b; font-weight: 700; padding: 14px 10px; border: 1px solid #e5e5ea; font-size: 13px;}
+.teacher-table td { padding: 6px 8px; border: 1px solid #e5e5ea; text-align: center; vertical-align: middle; }
+
+/* ✅ 폰트 크기 14px로 축소하여 콤팩트하게 복구 */
+.name-input, .chip, .placeholder-text, .note-select { 
+    font-size: 14px !important; 
+    font-weight: 700 !important; 
+}
+
+.name-input { width: 100%; border: none; outline: none; text-align: center; color: #000; padding: 8px; border-radius: 8px; transition: 0.2s; }
+.name-input:focus { background: #f5f5f7; }
+
+/* ✅ 담당과목/학급: 블루칩 복구 & 쓸데없는 라인 제거 */
+.chip-container {
+    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-height: 36px;
+    padding: 4px; cursor: pointer; border-radius: 8px; transition: 0.2s; border: none;
+}
+.chip-container:hover { background: #f9f9fb; }
+.chip { 
+    background: #eff6ff; /* 애플 블루 라이트 */
+    color: #007AFF;      /* 파란색 폰트 복구 */
+    border: none;        /* 테두리 완전히 제거 */
+    padding: 4px 10px; border-radius: 8px; 
+}
+.placeholder-text { color: #c7c7cc; font-weight: 500 !important; }
+
+/* ✅ 비고란: 테두리 삭제, 텍스트 검정색, 매우 간결하게 */
+.note-select { 
+    width: 100%; 
+    border: none; /* 테두리 삭제 */
+    background: transparent; 
+    color: #1d1d1f; /* 검은색 폰트 */
+    padding: 8px 12px; border-radius: 8px; cursor: pointer; text-align: center;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2386868b' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    transition: background 0.2s;
+}
+.note-select:hover { background-color: #f5f5f7; }
+
+/* ✅ 저장 버튼 애플 블루 그라데이션 */
+.apple-save-btn {
+    background: linear-gradient(180deg, #007AFF 0%, #0066CC 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.apple-save-btn:hover {
+    background: linear-gradient(180deg, #1A85FF 0%, #007AFF 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4) !important;
+    opacity: 1 !important;
+}
+.apple-save-btn:active {
+    transform: translateY(0) !important;
+    opacity: 0.9 !important;
+}
+
+.delete-row-btn { color: #ff3b30; cursor: pointer; font-size: 20px; font-weight: bold; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto; border-radius: 50%; transition: 0.2s; }
+.delete-row-btn:hover { background: #fee2e2; }
+
+#loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10001; }
+.spinner { animation: spin 1s linear infinite; border: 3px solid #d1d1d6; border-top-color: #007AFF; width: 32px; height: 32px; border-radius: 50%; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="apple-modal-overlay">
+    <div class="apple-alert">
+        <div class="apple-alert-content">
+            <div id="apple-title" class="apple-alert-title"></div>
+            <div id="apple-text" class="apple-alert-text"></div>
+        </div>
+        <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+    </div>
+</div>
+
+<div id="subject-picker-modal" class="picker-modal-bg">
+    <div class="picker-box">
+        <h3 class="text-xl font-bold mb-4"> 담당과목 선택 </h3>
+
+        <div class="flex gap-2 mb-4">
+            <input type="text" id="new-subject-input" onkeypress="if(event.keyCode==13) addNewSubject()" class="w-full p-2.5 border border-[#e5e5ea] rounded-xl text-sm outline-none focus:border-[#007AFF] transition" placeholder= "새 과목 직접 입력 (예: 체육)" >
+            <button onclick="addNewSubject()" class="px-4 py-2 bg-[#f2f2f7] text-[#007AFF] font-bold rounded-xl text-sm hover:bg-[#e5e5ea] whitespace-nowrap transition"> + 추가 </button>
+        </div>
+
+        <div id="subject-grid" class="grid grid-cols-3 gap-2 overflow-y-auto mb-6 pr-1 max-h-[35vh]"></div>
+
+        <div class="flex gap-2 shrink-0">
+            <button onclick="closePicker()" class="flex-1 py-3 bg-[#f2f2f7] rounded-xl font-bold text-[#1d1d1f]"> 취소 </button>
+            <button onclick="saveSubjectSelection()" class="flex-1 py-3 bg-[#007AFF] text-white rounded-xl font-bold shadow-md"> 선택 완료 </button>
+        </div>
+    </div>
+</div>
+
+<div id="class-picker-modal" class="picker-modal-bg">
+    <div class="picker-box">
+        <h3 id="class-picker-title" class="text-xl font-bold mb-2"> 학급 선택 </h3>
+        <div class="flex bg-[#e5e5ea] p-1 rounded-lg mb-4">
+            <button onclick="switchClassTab(1)" id="tab-1" class="tab-btn active"> 1학년 </button>
+            <button onclick="switchClassTab(2)" id="tab-2" class="tab-btn"> 2학년 </button>
+            <button onclick="switchClassTab(3)" id="tab-3" class="tab-btn"> 3학년 </button>
+        </div>
+        <div id="class-grid" class="grid grid-cols-4 gap-2 mb-6 max-h-[35vh] overflow-y-auto"></div>
+        <div class="flex gap-2 shrink-0">
+            <button onclick="closePicker()" class="flex-1 py-3 bg-[#f2f2f7] rounded-xl font-bold text-[#1d1d1f]"> 취소 </button>
+            <button onclick="saveClassSelection()" class="flex-1 py-3 bg-[#007AFF] text-white rounded-xl font-bold shadow-md"> 선택 완료 </button>
+        </div>
+    </div>
+</div>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p class="text-[#8e8e93] font-medium text-sm mt-3"> 데이터를 동기화 중... </p>
+</div>
+
+<div class="main-container shadow-sm">
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold tracking-tight"> 교사 기본 정보 설정 </h2>
+        <p class="text-[#8e8e93] font-medium mt-1"> 이름 옆의 칸을 클릭하여 과목과 학급을 지정하세요. </p>
+    </div>
+
+    <div class="overflow-hidden border border-[#e5e5ea] rounded-2xl mb-6">
+        <table class="teacher-table">
+            <thead>
+                <tr>
+                    <th class="w-12"> 순번 </th>
+                    <th class="w-40"> 교사명 </th>
+                    <th> 담당과목 (복수) </th>
+                    <th class="w-32"> 담임 </th>
+                    <th> 이동학급 (다중) </th>
+                    <th class="w-32"> 비고 </th>
+                    <th class="w-14"></th>
+                </tr>
+            </thead>
+            <tbody id="teacher-tbody"></tbody>
+        </table>
+    </div>
+
+    <div class="flex justify-center mb-10">
+        <button onclick="addTeacherRow()" class="px-8 py-3 bg-[#f2f2f7] text-[#007AFF] font-bold rounded-2xl hover:bg-[#e5e5ea] transition shadow-sm">
+            + 교사 행 추가
+        </button>
+    </div>
+
+    <div class="pt-8 border-t border-[#e5e5ea]">
+        <button onclick="validateAndSave()" class="w-full py-5 apple-save-btn text-white font-bold rounded-2xl text-xl transition">
+            설정 저장 및 다음 단계로
+        </button>
+    </div>
+</div>
+
+<script>
+// --- 전역 상태 관리 ---
+let state = {
+    masterSubjects: [],
+    teachers: [],
+    noteOptions: ["", "순회", "시간강사", "필수배치", "복도배치", "완전제외", "평가담당"],
+    gradeConfigs: { 1: 10, 2: 10, 3: 10 },
+    gradeRooms: { 1: [], 2: [], 3: [] }
+};
+
+let pickerState = {
+    targetTeacherId: null,
+    targetField: null,
+    tempSelection: [],
+    currentTabGrade: 1
+};
+
+// --- 초기화 (서버 연동) ---
+$(function() {
+    if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+        .withSuccessHandler(function(data) {
+            state.masterSubjects = data.masterSubjects || [];
+            state.teachers = data.teachers || [];
+            state.gradeConfigs = data.gradeConfigs || { 1: 10, 2: 10, 3: 10 };
+            state.gradeRooms = data.gradeRooms || { 1: [], 2: [], 3: [] };
+
+            if (state.teachers.length === 0) addTeacherRow();
+            else renderTeacherTable();
+
+            $('#loading-overlay').fadeOut(300);
+        })
+        .getTeacherSetupData();
+    } else {
+        $('#loading-overlay').hide();
+        addTeacherRow();
+    }
+});
+
+function generateId() { return 't_' + Math.random().toString(36).substr(2, 9); }
+
+// --- 테이블 렌더링 ---
+function renderTeacherTable() {
+    const $tbody = $('#teacher-tbody').empty();
+    state.teachers.forEach((t, i) => {
+        const subjectsHtml = t.subjects && t.subjects.length > 0
+            ? t.subjects.map(s => `<span class="chip">${s}</span>`).join('')
+            : '<span class="placeholder-text">+ 과목 선택</span>';
+
+        const movingHtml = t.movingClasses && t.movingClasses.length > 0
+            ? t.movingClasses.map(c => `<span class="chip">${c}</span>`).join('')
+            : '<span class="placeholder-text">+ 학급 선택</span>';
+
+        const homeroomHtml = t.homeroom
+            ? `<span class="chip">${t.homeroom}</span>`
+            : '<span class="placeholder-text">없음</span>';
+
+        // ✅ VLOOKUP 덮어쓰기 오류 방지를 위해 notesReason 사용 유지
+        let noteOptionsHtml = state.noteOptions.map(opt => `<option value="${opt}" ${(t.notesReason || t.note) === opt ? 'selected' : ''}>${opt || '선택 안함'}</option>`).join('');
+
+        $tbody.append(`
+            <tr id="${t.id}">
+                <td class="text-[#8e8e93] font-bold">${i + 1}</td>
+                <td><input type="text" class="name-input" value="${t.name}" placeholder="교사명" onchange="updateTeacher('${t.id}', 'name', this.value)"></td>
+                <td><div class="chip-container" onclick="openSubjectPicker('${t.id}')">${subjectsHtml}</div></td>
+                <td><div class="chip-container" onclick="openClassPicker('${t.id}', 'homeroom')">${homeroomHtml}</div></td>
+                <td><div class="chip-container" onclick="openClassPicker('${t.id}', 'movingClasses')">${movingHtml}</div></td>
+                <td><select class="note-select" onchange="updateTeacher('${t.id}', 'notesReason', this.value)">${noteOptionsHtml}</select></td>
+                <td><div class="delete-row-btn" onclick="deleteTeacherRow('${t.id}')">&times;</div></td>
+            </tr>
+        `);
+    });
+}
+
+// --- 피커 로직 (과목) ---
+function openSubjectPicker(id) {
+    pickerState.targetTeacherId = id;
+    pickerState.targetField = 'subjects';
+    const teacher = state.teachers.find(t => t.id === id);
+    pickerState.tempSelection = [...(teacher.subjects || [])];
+
+    // 교사가 이미 가지고 있는 과목이 마스터 리스트에 없다면 추가
+    (teacher.subjects || []).forEach(s => {
+        if (s && !state.masterSubjects.includes(s)) {
+            state.masterSubjects.push(s);
+        }
+    });
+
+    renderSubjectGrid();
+    $('#subject-picker-modal').css('display', 'flex');
+}
+
+function renderSubjectGrid() {
+    const $grid = $('#subject-grid').empty();
+    state.masterSubjects.forEach(s => {
+        const isSelected = pickerState.tempSelection.includes(s);
+        $grid.append(`<button onclick="toggleTempItem('${s}')" class="grid-btn ${isSelected?'selected':''}">${s}</button>`);
+    });
+}
+
+window.addNewSubject = function() {
+    const newSub = $('#new-subject-input').val().trim();
+    if (newSub) {
+        if (!state.masterSubjects.includes(newSub)) state.masterSubjects.push(newSub);
+        if (!pickerState.tempSelection.includes(newSub)) pickerState.tempSelection.push(newSub);
+        $('#new-subject-input').val('');
+        renderSubjectGrid();
+    }
+};
+
+function saveSubjectSelection() {
+    const t = state.teachers.find(t => t.id === pickerState.targetTeacherId);
+    t.subjects = [...pickerState.tempSelection];
+    closePicker();
+    renderTeacherTable();
+}
+
+// --- 피커 로직 (학급) ---
+function openClassPicker(id, field) {
+    pickerState.targetTeacherId = id;
+    pickerState.targetField = field;
+    const teacher = state.teachers.find(t => t.id === id);
+
+    if (field === 'homeroom') {
+        pickerState.tempSelection = teacher.homeroom ? [teacher.homeroom] : [];
+        $('#class-picker-title').text('담임 학급 선택');
+    } else {
+        pickerState.tempSelection = [...(teacher.movingClasses || [])];
+        $('#class-picker-title').text('이동 학급 선택 (다중)');
+    }
+
+    switchClassTab(1);
+    $('#class-picker-modal').css('display', 'flex');
+}
+
+function switchClassTab(grade) {
+  pickerState.currentTabGrade = grade;
+  $('.tab-btn').removeClass('active');
+  $(`#tab-${grade}`).addClass('active');
+
+  const $grid = $('#class-grid').empty();
+
+  const rooms = state.gradeRooms[grade];
+
+  // ✅ 수정: 숫자 기반 강제 생성 대신, 서버에서 받은 실제 고사실 이름을 그대로 출력
+  if (rooms && rooms.length > 0) {
+    rooms.forEach(cls => {
+      const isSelected = pickerState.tempSelection.includes(cls);
+      $grid.append(`<button onclick="toggleTempItem('${cls}')" class="grid-btn ${isSelected?'selected':''}">${cls}</button>`);
+    });
+  } else {
+    // 안전 장치: 고사실 배열이 비어있을 경우 기존 1-1 방식으로 동작
+    const maxClass = state.gradeConfigs[grade] || 10;
+    for(let i=1; i<=maxClass; i++) {
+      const cls = `${grade}-${i}`;
+      const isSelected = pickerState.tempSelection.includes(cls);
+      $grid.append(`<button onclick="toggleTempItem('${cls}')" class="grid-btn ${isSelected?'selected':''}">${i}반</button>`);
+    }
+  }
+}
+
+function saveClassSelection() {
+    const t = state.teachers.find(t => t.id === pickerState.targetTeacherId);
+    if (pickerState.targetField === 'homeroom') {
+        t.homeroom = pickerState.tempSelection.length > 0 ? pickerState.tempSelection[0] : "";
+    } else {
+        t.movingClasses = [...pickerState.tempSelection];
+    }
+    closePicker();
+    renderTeacherTable();
+}
+
+function toggleTempItem(val) {
+  if (pickerState.targetField === 'homeroom') {
+    pickerState.tempSelection = pickerState.tempSelection.includes(val) ? [] : [val];
+  } else {
+    if(pickerState.tempSelection.includes(val)) {
+      pickerState.tempSelection = pickerState.tempSelection.filter(v => v !== val);
+    } else {
+      pickerState.tempSelection.push(val);
+    }
+  }
+
+  if (pickerState.targetField === 'subjects') {
+    renderSubjectGrid();
+  } else {
+    // ✅ 수정: 문자열을 억지로 잘라내는 하드코딩 제거. 
+    // 선택 항목 갱신 후 화면(그리드)을 다시 깔끔하게 그려버리도록 개선
+    switchClassTab(pickerState.currentTabGrade);
+  }
+}
+
+
+function closePicker() { $('.picker-modal-bg').hide(); $('#new-subject-input').val(''); }
+
+// --- 기본 조작 ---
+window.addTeacherRow = function() {
+    state.teachers.push({ id: generateId(), name: "", subjects: [], homeroom: "", movingClasses: [], notesReason: "" });
+    renderTeacherTable();
+};
+
+window.deleteTeacherRow = function(id) {
+    state.teachers = state.teachers.filter(t => t.id !== id);
+    renderTeacherTable();
+};
+
+window.updateTeacher = function(id, field, val) {
+    const t = state.teachers.find(t => t.id === id);
+    if (t) t[field] = val.trim();
+};
+
+// --- 애플 스타일 알림창 제어 ---
+function appleAlert(title, text, onConfirm = null, showCancel = true) {
+    $('#apple-title').text(title);
+    $('#apple-text').html(text);
+    const $btns = $('#apple-buttons-container').empty();
+
+    if (showCancel) {
+        $btns.append(`<button id="apple-btn-cancel" class="apple-btn">취소</button>`);
+        $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">확인</button>`);
+        $('#apple-btn-cancel').on('click', () => $('#apple-modal-overlay').hide());
+    } else {
+        $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold w-full">확인</button>`);
+    }
+
+    $('#apple-btn-confirm').on('click', () => {
+        $('#apple-modal-overlay').hide();
+        if(onConfirm) onConfirm();
+    });
+    $('#apple-modal-overlay').css('display', 'flex');
+}
+
+// --- 최종 저장 및 진행 ---
+window.validateAndSave = function() {
+    const invalid = state.teachers.filter(t => t.name.trim() === '');
+    if (invalid.length > 0 && state.teachers.length > 1) {
+        return appleAlert('입력 오류', '이름이 없는 행이 있습니다.<br>삭제하거나 이름을 입력해 주세요.', null, false);
+    }
+
+    appleAlert('정보를 저장하시겠습니까?', '교사 기본 정보가 시트에 업데이트되며,<br>다음 단계(감독 가능일 설정)로 이동합니다.', () => {
+        $('#loading-overlay').show();
+        google.script.run
+        .withSuccessHandler(() => { console.log('화면 전환 중'); })
+        .withFailureHandler(err => {
+            $('#loading-overlay').hide();
+            appleAlert('저장 오류', err.message, null, false);
+        })
+        .saveTeacherInfoAndShowAvailability(state.teachers);
+    });
+};
+</script>
+</body>
+</html>

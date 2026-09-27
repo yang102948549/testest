@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-electron/
+release/
+test-artifacts/
+*.log
+.npm-cache/
+.builder-cache/

@@ -1,0 +1,2635 @@
+/* iOS-style design layer (Figma Community "iOS UI Components": Controls, Tables).
+   Inset grouped lists on a gray canvas, hairline separators, tinted tokens,
+   a real segmented control and Pretendard for Korean text.
+   Loaded last; replaces compact.css instead of stacking another theme. */
+:root {
+  --ink: #1c1c1e;
+  --muted: #8a8a8e;
+  --secondary: #6c6c70;
+  --line: #e5e5ea;
+  --fill: #7676801f;
+  --fill-2: #7676800f;
+  --blue: #007aff;
+  --blue-ink: #0062cc;
+  --surface: #fff;
+  --canvas: #f2f2f7;
+  --red: #c9483f;
+  --red-soft: #c9483f14;
+  --radius: 12px;
+  --shadow-card: 0 0 0 0.5px #0000000d, 0 1px 3px #0000000a;
+  --font:
+    "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", "Malgun Gothic", sans-serif;
+}
+body {
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 14px;
+  letter-spacing: inherit;
+  border-radius: 10px;
+  min-height: 36px;
+}
+button {
+  padding: 7px 14px;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 560;
+  box-shadow:
+    0 0 0 0.5px #0000001f,
+    0 1px 2px #0000000d;
+  transition:
+    background 0.15s,
+    box-shadow 0.15s,
+    transform 0.08s;
+}
+button:hover {
+  background: #fafafc;
+  border-color: transparent;
+}
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+button:disabled {
+  opacity: 0.38;
+}
+input,
+select,
+textarea {
+  border: 0;
+  padding: 7px 11px;
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1px #0000000f;
+  color: var(--ink);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  background: #fff;
+  box-shadow:
+    inset 0 0 0 1px var(--blue),
+    0 0 0 3px #007aff26;
+  outline: none;
+}
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #007aff4d;
+  outline-offset: 2px;
+}
+.primary,
+.original-workflow .primary {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px #0060cc33;
+}
+.primary:hover,
+.original-workflow .primary:hover {
+  background: #0a72ea;
+}
+.icon-btn {
+  box-shadow: none;
+  background: none;
+  color: #aeaeb2;
+  min-width: 30px;
+  border-radius: 50%;
+}
+.icon-btn:hover {
+  background: var(--fill-2);
+  color: var(--red);
+}
+
+/* ---------- Shell: iPadOS-style sidebar + translucent toolbar ---------- */
+.app {
+  --sidebar: 224px;
+  height: 100vh;
+  overflow: hidden;
+}
+.app.collapsed {
+  --sidebar: 68px;
+}
+.sidebar {
+  background: #fbfbfd;
+  border-right: 1px solid var(--line);
+  padding: 20px 12px 12px;
+}
+.brand {
+  padding: 0 8px;
+  margin-bottom: 20px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.brand-icon {
+  background: linear-gradient(160deg, #3d9bff, #0066e0);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 0.5px #ffffff40,
+    0 1px 3px #0060cc40;
+}
+.new-exam {
+  margin-bottom: 18px;
+  min-height: 36px;
+  width: 100%;
+  justify-content: flex-start;
+  background: var(--fill-2);
+  box-shadow: none;
+  color: var(--blue);
+  font-weight: 600;
+}
+.new-exam:hover {
+  background: #007aff14;
+}
+.nav-label,
+.sidebar-note {
+  display: none;
+}
+.nav-group {
+  margin-bottom: 6px;
+}
+.sidebar nav button {
+  transition: none;
+}
+.sidebar nav .nav-group > button {
+  width: 100%;
+  padding: 8px 10px;
+  min-height: 38px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 10px;
+  color: var(--ink);
+  background: none;
+  box-shadow: none;
+}
+.sidebar nav .nav-group > button svg {
+  color: var(--blue);
+}
+.sidebar nav .nav-group > button:hover {
+  background: var(--fill-2);
+}
+.sidebar nav .nav-group > button.active {
+  color: var(--ink);
+  background: none;
+}
+/* Groups without sub pages are the page itself: filled selection. */
+.sidebar nav .nav-group > button.active:only-child {
+  color: #fff;
+  background: var(--blue);
+}
+.sidebar nav .nav-group > button.active:only-child svg {
+  color: #fff;
+}
+.nav-children {
+  display: grid;
+  margin: 2px 0 6px 28px;
+  gap: 2px;
+}
+.sidebar nav .nav-children button {
+  min-height: 34px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 10px;
+  color: var(--secondary);
+  background: none;
+  box-shadow: none;
+  border-radius: 9px;
+  justify-content: flex-start;
+}
+.sidebar nav .nav-children button:hover {
+  background: var(--fill-2);
+}
+.sidebar nav .nav-children button[aria-current="page"] {
+  color: #fff;
+  background: var(--blue);
+  font-weight: 600;
+}
+.sidebar-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+.sidebar-bottom button {
+  box-shadow: none;
+  background: none;
+}
+.workspace {
+  min-width: 0;
+  min-height: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.topbar {
+  height: 50px;
+  min-height: 50px;
+  flex-shrink: 0;
+  padding: 0 28px;
+  background: #f2f2f7d9;
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid #0000000f;
+}
+.top-actions button {
+  box-shadow: none;
+  background: none;
+  color: var(--blue);
+}
+.top-actions button:hover {
+  background: var(--fill-2);
+}
+.top-actions .primary {
+  color: #fff;
+  background: var(--blue);
+}
+.breadcrumb {
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 65%;
+}
+.breadcrumb span {
+  color: var(--ink);
+  font-weight: 600;
+}
+.save-state {
+  font-size: 12px;
+  color: var(--muted);
+}
+.save-state .tiny-dot {
+  background: #34c759;
+}
+main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0;
+  max-width: none;
+  padding: 26px 32px 24px;
+  background: var(--canvas);
+}
+main > footer {
+  display: none;
+}
+.page-heading {
+  margin-bottom: 18px;
+  min-height: 36px;
+}
+.page-heading h1 {
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+.page-heading .primary {
+  min-height: 36px;
+  padding: 7px 16px;
+  border-radius: 18px;
+}
+.notice {
+  flex-shrink: 0;
+  font-size: 13px;
+  padding: 9px 28px;
+  background: #007aff12;
+  border: 0;
+  color: var(--blue-ink);
+}
+
+/* ---------- Segmented control ---------- */
+.section-tabs {
+  display: flex;
+  width: 100%;
+  max-width: 580px;
+  padding: 2px;
+  gap: 0;
+  margin-bottom: 26px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--fill);
+}
+.section-tabs button {
+  flex: 1;
+  position: relative;
+  min-height: 30px;
+  padding: 4px 12px;
+  border-radius: 7px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  justify-content: center;
+  align-items: center;
+  white-space: nowrap;
+}
+.section-tabs button:hover {
+  background: none;
+}
+.section-tabs button + button::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: #8e8e9340;
+}
+.section-tabs button[aria-selected="true"]::before,
+.section-tabs button[aria-selected="true"] + button::before {
+  display: none;
+}
+.section-tabs button b {
+  font-size: 13px;
+  font-weight: 500;
+}
+.section-tabs button small {
+  display: none;
+}
+.section-tabs button[aria-selected="true"] {
+  background: #fff;
+  box-shadow:
+    0 3px 8px #0000001f,
+    0 3px 1px #0000000a,
+    0 0 0 0.5px #0000000a;
+}
+.section-tabs button[aria-selected="true"] b {
+  font-weight: 650;
+}
+.workflow-tabs {
+  display: inline-flex;
+  padding: 2px;
+  gap: 0;
+  border-radius: 9px;
+  background: var(--fill);
+}
+.workflow-tabs button,
+.original-workflow .workflow-tabs button {
+  border-radius: 7px;
+  background: none;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 14px;
+  min-height: 28px;
+  color: var(--ink);
+}
+.workflow-tabs button.active,
+.original-workflow .workflow-tabs button.active {
+  font-weight: 650;
+  background: #fff;
+  box-shadow:
+    0 3px 8px #0000001f,
+    0 3px 1px #0000000a;
+}
+
+/* ---------- Sections (inset grouped) ---------- */
+.original-workflow {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+.original-workflow button {
+  font-size: 14px;
+  min-height: 34px;
+}
+.original-workflow input,
+.original-workflow select,
+.original-workflow textarea {
+  font-size: 14px;
+  color: var(--ink);
+}
+.original-workflow .workflow-panel {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.workflow-panel-head {
+  margin: 0 0 10px;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.workflow-panel-head h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+.workflow-panel-head p {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.workflow-panel-head .actions {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.workflow-intro {
+  background: #007aff0f;
+  border: 0;
+  border-radius: var(--radius);
+  padding: 14px 18px;
+}
+.workflow-intro p {
+  color: var(--blue-ink);
+  font-weight: 500;
+}
+.workflow-filter {
+  margin: 12px 0 10px;
+  gap: 12px;
+}
+.workflow-search {
+  background: var(--fill);
+  border: 0;
+  min-height: 36px;
+  width: 260px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: var(--muted);
+}
+.workflow-search input,
+.workflow-search input:focus {
+  background: none;
+  box-shadow: none;
+  min-height: 34px;
+  padding: 5px 6px;
+  font-size: 15px;
+}
+.workflow-search:focus-within {
+  box-shadow: 0 0 0 3px #007aff26;
+}
+.workflow-filter select {
+  min-height: 36px;
+  font-size: 13px;
+}
+.workflow-filter > span,
+.inline-help {
+  font-size: 13px;
+  color: var(--muted);
+}
+.workflow-table-scroll {
+  border: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.workflow-empty {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  font-size: 14px;
+  color: var(--muted);
+  padding: 28px;
+}
+.step-footer {
+  position: static;
+  min-height: 40px;
+  padding: 4px 0 0;
+  border: 0;
+  background: none;
+}
+.step-footer span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.step-footer .primary {
+  min-height: 38px;
+  padding: 7px 18px;
+  border-radius: 19px;
+}
+.step-footer small {
+  display: none;
+}
+
+/* ---------- Exam title: a single grouped row ---------- */
+.exam-title-field {
+  margin: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  max-width: 640px;
+}
+.exam-title-field label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 6px 0 16px;
+  min-height: 50px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.original-workflow .exam-title-field input {
+  flex: 1;
+  width: auto;
+  max-width: none;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 500;
+  background: none;
+  box-shadow: none;
+  color: var(--secondary);
+  min-height: 40px;
+}
+.original-workflow .exam-title-field input:focus {
+  text-align: left;
+  color: var(--ink);
+  background: var(--fill-2);
+}
+
+/* ---------- Room manager ---------- */
+.room-disclosure {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.room-disclosure summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  cursor: pointer;
+  user-select: none;
+}
+.room-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.room-disclosure summary::after {
+  content: "";
+  order: 1;
+  width: 7px;
+  height: 7px;
+  margin: 0 2px;
+  border-right: 2px solid var(--blue);
+  border-bottom: 2px solid var(--blue);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s;
+}
+.room-disclosure:not([open]) summary::after {
+  transform: rotate(-45deg);
+}
+.room-disclosure summary span {
+  order: 2;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--muted);
+  margin: 0;
+}
+.room-disclosure[open] > .workflow-panel {
+  margin-top: 16px;
+}
+.room-disclosure[open] > .workflow-panel + .workflow-panel {
+  margin-top: 22px;
+}
+/* Sub-section header sits above its card, iOS footnote style. */
+.room-disclosure .workflow-panel-head {
+  padding: 0 16px;
+  margin-bottom: 7px;
+  display: block;
+}
+.room-disclosure .workflow-panel-head > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.room-disclosure .workflow-panel-head h2 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--secondary);
+}
+.room-disclosure .workflow-panel-head p {
+  font-size: 12px;
+  margin: 0;
+}
+.grade-room-grid,
+.extra-room-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-left: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.grade-room-box {
+  --tint: #007aff;
+  --tint-ink: #0062cc;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  padding: 11px 16px 11px 0;
+  min-height: 56px;
+}
+.grade-room-box + .grade-room-box {
+  border-top: 1px solid var(--line);
+}
+.grade-room-grid .grade-room-box:nth-child(2) {
+  --tint: #34c759;
+  --tint-ink: #1d8a3a;
+}
+.grade-room-grid .grade-room-box:nth-child(3) {
+  --tint: #ff9500;
+  --tint-ink: #c05a00;
+}
+.extra-room-grid .grade-room-box:nth-child(1) {
+  --tint: #5856d6;
+  --tint-ink: #4240b8;
+}
+.extra-room-grid .grade-room-box:nth-child(2) {
+  --tint: #30b0c7;
+  --tint-ink: #0b7688;
+}
+.grade-room-box header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+}
+.grade-room-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.grade-room-box h3 span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0;
+}
+.original-workflow .grade-room-box header button {
+  box-shadow: none;
+  background: none;
+  color: var(--blue);
+  padding: 0 8px;
+  min-height: 28px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 3px;
+}
+.original-workflow .grade-room-box header button:hover {
+  background: #007aff14;
+}
+.editable-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  min-height: 32px;
+  align-items: center;
+}
+.editable-chips:empty::before {
+  content: "없음";
+  color: #c7c7cc;
+  font-size: 14px;
+}
+/* Room token: neutral outlined tag (Apple Reminders/Mail style) so many
+   tokens read as one calm group; the remove badge appears on hover. */
+.room-token {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  max-width: 100%;
+  border-radius: 8px;
+  background: #7676801a;
+  color: var(--ink);
+  transition: background 0.12s;
+}
+.room-token:hover,
+.room-token:focus-within {
+  background: #76768029;
+}
+.original-workflow .room-token .room-token-label {
+  display: block;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 8px;
+  box-shadow: none;
+  background: none;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 30px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.original-workflow .room-token .room-token-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-height: 0;
+  min-width: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  background: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+.room-token:hover .room-token-remove,
+.room-token:focus-within .room-token-remove {
+  opacity: 1;
+  pointer-events: auto;
+}
+.room-token-remove span {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #8e8e93;
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--canvas);
+  transition: background 0.12s;
+}
+.room-token-remove span svg {
+  width: 8px;
+  height: 8px;
+}
+.room-token-remove:hover span {
+  background: var(--red);
+}
+.room-bulk {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.original-workflow .room-bulk input {
+  width: 52px;
+  min-height: 30px;
+  height: 30px;
+  font-size: 14px;
+  text-align: center;
+  padding: 3px 4px;
+  border-radius: 8px;
+}
+.original-workflow .room-bulk button {
+  font-size: 13px;
+  padding: 0 12px;
+  min-height: 30px;
+  border-radius: 15px;
+  box-shadow: none;
+  background: var(--fill);
+  color: var(--blue);
+  font-weight: 600;
+}
+.original-workflow .room-bulk button:hover {
+  background: #007aff1f;
+}
+.extra-room-grid .grade-room-box {
+  grid-template-columns: 150px minmax(0, 1fr);
+}
+
+/* ---------- Exam days ---------- */
+.exam-date-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.exam-date-card {
+  background: var(--surface);
+  border: 0;
+  padding: 16px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+.exam-date-card header {
+  margin-bottom: 12px;
+  gap: 6px;
+  align-items: flex-start;
+}
+.exam-date-card h3 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.original-workflow .exam-date-card header input {
+  background: none;
+  box-shadow: none;
+  min-height: 24px;
+  font-size: 12px;
+  padding: 0;
+  color: var(--muted);
+}
+.original-workflow .exam-date-card header button {
+  min-height: 28px;
+  font-size: 13px;
+  padding: 0 9px;
+  border-radius: 14px;
+  box-shadow: none;
+  background: var(--fill-2);
+  color: var(--blue);
+}
+.original-workflow .exam-date-card header button:hover {
+  background: #007aff14;
+}
+.schedule-grid {
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.schedule-grid th {
+  background: #f9f9fb;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 4px;
+  font-weight: 600;
+}
+.schedule-grid th small {
+  font-size: 10px;
+}
+.schedule-grid td {
+  padding: 0;
+  border-color: var(--line);
+}
+.original-workflow .schedule-grid .subject-cell {
+  min-height: 54px;
+  padding: 5px;
+  border-radius: 0;
+  font-size: 14px;
+  box-shadow: none;
+  background: none;
+  transform: none;
+}
+.original-workflow .schedule-grid .subject-cell:hover {
+  background: #007aff0a;
+}
+.subject-chip {
+  border: 0;
+  background: none;
+  padding: 3px;
+  gap: 5px;
+}
+.subject-chip b {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.subject-chip small {
+  background: #007aff14;
+  color: var(--blue-ink);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ---------- Teacher table ---------- */
+.original-teacher-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.original-teacher-table th,
+.original-teacher-table td {
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.original-teacher-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.original-teacher-table th {
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  height: 40px;
+}
+.original-teacher-table th small {
+  display: none;
+}
+.original-teacher-table tbody tr:hover {
+  background: #f9f9fb;
+}
+.original-teacher-table .row-number {
+  color: #c7c7cc;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+.original-workflow .original-teacher-table input,
+.original-workflow .original-teacher-table select {
+  min-height: 32px;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+.original-workflow .original-teacher-table .name-field {
+  font-size: 15px;
+  font-weight: 650;
+  background: none;
+  box-shadow: none;
+}
+.original-workflow .original-teacher-table .name-field:focus {
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+.original-workflow .original-teacher-table .chip-field {
+  min-height: 34px !important;
+  padding: 3px 4px;
+  gap: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  flex-wrap: wrap;
+  transform: none;
+}
+.original-workflow .original-teacher-table .chip-field:hover {
+  background: var(--fill-2);
+}
+.original-teacher-table .chip-field .placeholder {
+  color: #c7c7cc;
+  font-size: 13px;
+  font-weight: 500;
+}
+.original-teacher-table .chip-field:hover .placeholder {
+  color: var(--blue);
+}
+.original-teacher-table .data-chip {
+  padding: 3px 9px;
+  font-size: 13px;
+  line-height: 1.45;
+  border-radius: 7px;
+  font-weight: 600;
+  border: 0;
+  font-variant-numeric: tabular-nums;
+}
+.original-teacher-table .data-chip.subject,
+.original-teacher-table .data-chip.homeroom,
+.original-teacher-table .data-chip.moving {
+  background: #7676801a;
+  color: var(--ink);
+  box-shadow: none;
+  font-weight: 560;
+}
+.original-teacher-table td:nth-child(6) {
+  white-space: nowrap;
+}
+.original-workflow .original-teacher-table td:nth-child(6) select {
+  width: 118px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.original-workflow .original-teacher-table .teacher-note {
+  display: inline-block;
+  width: 150px;
+  margin: 0;
+  vertical-align: middle;
+  background: none;
+  box-shadow: none;
+  color: var(--secondary);
+  font-size: 13px;
+}
+.original-workflow .original-teacher-table .teacher-note:focus {
+  background: var(--fill-2);
+  box-shadow: inset 0 0 0 1px var(--blue);
+}
+.original-workflow .dashed-add {
+  background: none;
+  box-shadow: none;
+  border: 0;
+  color: var(--blue);
+  min-height: 40px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ---------- Settings ---------- */
+.mode-card,
+.original-settings > div,
+.original-settings .daily-option,
+.single-day-card,
+.import-source {
+  background: var(--surface);
+  border: 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.mode-card {
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.mode-card h3 {
+  font-size: 16px;
+  font-weight: 650;
+}
+.mode-card p,
+.settings-note,
+.advanced-settings p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.switch input:checked + span {
+  background: #34c759;
+}
+.switch span {
+  pointer-events: none;
+}
+.original-settings {
+  gap: 18px;
+}
+.original-settings > div {
+  padding: 6px 0 6px 18px;
+}
+.original-settings h3 {
+  font-size: 13px;
+  color: var(--secondary);
+  margin: 10px 0 4px;
+  font-weight: 600;
+}
+.original-settings label {
+  font-size: 15px;
+  min-height: 48px;
+  padding-right: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.original-settings label:last-child {
+  border-bottom: 0;
+}
+.original-workflow .original-settings input[type="number"] {
+  min-height: 32px;
+  width: 72px;
+  text-align: center;
+  font-size: 15px;
+  border-radius: 8px;
+}
+.original-settings .daily-option {
+  padding: 14px 18px;
+}
+.advanced-settings {
+  border: 0;
+  background: none;
+}
+.advanced-settings summary {
+  font-size: 14px;
+  color: var(--blue);
+  font-weight: 600;
+}
+.single-day-card {
+  padding: 16px;
+}
+.room-tile {
+  border-radius: 9px;
+  min-height: 34px;
+  font-size: 13px;
+}
+
+/* ---------- Modal sheet + checkmark list ---------- */
+.workflow-backdrop {
+  background: #0000004d;
+  backdrop-filter: blur(4px);
+}
+.workflow-modal {
+  background: var(--canvas);
+  border-radius: 16px;
+  border: 0;
+  box-shadow:
+    0 0 0 0.5px #0000001a,
+    0 30px 80px #0000003d;
+  max-height: 90vh;
+  overflow: hidden;
+}
+.workflow-modal > header {
+  padding: 20px 24px 14px;
+  background: var(--canvas);
+  border-bottom: 0;
+}
+.workflow-modal > header h2 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.workflow-modal > header p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 4px;
+}
+.workflow-modal-body {
+  padding: 4px 24px 20px;
+  overflow: auto;
+}
+.workflow-modal > footer {
+  padding: 12px 24px 16px;
+  background: #f2f2f7eb;
+  border-top: 1px solid var(--line);
+  font-size: 14px;
+}
+.workflow-modal > footer button {
+  min-width: 84px;
+}
+.modal-field {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--secondary);
+}
+.modal-field input {
+  background: var(--surface);
+  font-size: 16px;
+  min-height: 44px;
+}
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border: 0;
+  background: var(--surface);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.selection-grid button,
+.original-workflow .selection-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+  box-shadow:
+    inset 0 -1px 0 var(--line),
+    inset -1px 0 0 var(--line);
+  background: var(--surface);
+  min-height: 46px;
+  padding: 10px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  transform: none;
+}
+.selection-grid button:hover {
+  background: #f9f9fb;
+}
+.selection-grid button.selected,
+.original-workflow .selection-grid button.selected {
+  color: var(--blue);
+  background: var(--surface);
+  font-weight: 600;
+}
+.selection-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid #c7c7cc;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.selected .selection-mark {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+}
+.picker-tools {
+  font-size: 12px;
+  color: var(--muted);
+}
+.picker-tools button {
+  color: var(--blue);
+  box-shadow: none;
+  background: none;
+  font-size: 13px;
+}
+.inline-form input {
+  background: var(--surface);
+}
+.inline-form button {
+  color: var(--blue);
+  box-shadow: none;
+  background: none;
+}
+
+/* ---------- Import ---------- */
+.import-source {
+  padding: 18px;
+  margin-bottom: 20px;
+}
+.import-source h3,
+.import-mapping h3,
+.import-preview h3 {
+  font-size: 15px;
+  font-weight: 650;
+  margin-bottom: 12px;
+}
+.import-source p,
+.import-preview p,
+.paste-import p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 9px;
+}
+.import-source.loaded {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+}
+.import-source.loaded h3 {
+  margin: 0;
+}
+.import-source.loaded p {
+  display: none;
+}
+.paste-import {
+  margin: 18px 0;
+}
+.paste-import summary {
+  color: var(--blue);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.paste-import textarea {
+  margin: 10px 0;
+  background: var(--surface);
+}
+.import-options,
+.column-mapping {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 13px;
+  margin: 13px 0 18px;
+}
+.import-options label,
+.column-mapping label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.import-preview .workflow-table-scroll {
+  max-height: 290px;
+}
+.import-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.import-preview th,
+.import-preview td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.import-preview th {
+  position: sticky;
+  top: 0;
+  background: #f9f9fb;
+  color: var(--muted);
+  font-weight: 600;
+}
+.import-count {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 13px;
+}
+/* Timetable remains a fixed workspace with its own scroll area. */
+.page-assignments main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.assignment-workflow {
+  flex: 1;
+  min-height: 0;
+  gap: 9px;
+}
+.assignment-summary {
+  margin: 0;
+  padding: 5px 0;
+  min-height: 30px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  gap: 19px;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.assignment-summary b {
+  font-size: 14px;
+}
+.assignment-summary button {
+  color: #007aff;
+  border: 0;
+  background: none;
+  font-size: 12px;
+  min-height: 28px;
+}
+.assignment-workflow > .workflow-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 34px 36px minmax(100px, 1fr) 24px;
+  gap: 4px 12px;
+  flex: 1;
+  min-height: 0;
+}
+.assignment-workflow .workflow-panel-head {
+  grid-row: 1;
+  grid-column: 1;
+  margin: 0;
+  justify-content: flex-start;
+  min-height: 0;
+}
+.assignment-workflow .workflow-panel-head h2 {
+  display: none;
+}
+.assignment-workflow .workflow-filter {
+  grid-row: 1;
+  grid-column: 2;
+  margin: 0;
+}
+.assignment-workflow .workflow-search {
+  width: 190px;
+  min-height: 31px;
+}
+.assignment-workflow .workflow-search input,
+.assignment-workflow .workflow-filter select {
+  min-height: 30px;
+  font-size: 12px;
+}
+.assignment-workflow .assignment-controls {
+  grid-row: 2;
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-height: 0;
+}
+.original-workflow .assignment-controls button {
+  font-size: 13px;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 15px;
+}
+.assignment-controls .pending-label {
+  margin-right: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9a5a0c;
+}
+.apply-button {
+  background: #007aff !important;
+  border-color: #007aff !important;
+}
+.assignment-workflow .selection-guide {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-height: 0;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  font-size: 12px;
+  color: #8a8a95;
+}
+.assignment-workflow .proctor-scroll {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  min-height: 100px;
+  max-height: none;
+  overflow: auto;
+  border-radius: 10px;
+}
+.assignment-workflow .workflow-legend {
+  grid-row: 4;
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 3px 0;
+  min-height: 0;
+  gap: 13px;
+  font-size: 11px;
+}
+.workflow-legend i {
+  width: 10px;
+  height: 10px;
+}
+.proctor-matrix {
+  font-size: 13px;
+  width: 100%;
+  min-width: max-content;
+  table-layout: fixed;
+}
+.proctor-matrix th,
+.proctor-matrix td {
+  height: 32px;
+  min-width: 67px;
+  border-color: #e9e9ef;
+  font-size: 13px;
+}
+.proctor-matrix thead th {
+  height: 29px;
+  top: 0;
+  padding: 4px 6px;
+  color: #636373;
+  background: #f3f3f8;
+  font-weight: 500;
+}
+.proctor-matrix thead tr:nth-child(2) th {
+  top: 29px;
+  height: 26px;
+}
+.proctor-matrix thead tr:nth-child(3) th {
+  top: 55px;
+  height: 25px;
+}
+.proctor-matrix .sticky-sequence {
+  left: 0;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  background: #fafafd;
+}
+.proctor-matrix .sticky-name {
+  left: 32px;
+  width: 90px;
+  min-width: 90px;
+  max-width: 110px;
+  padding: 4px 7px;
+  font-size: 13px;
+  background: #fafafd;
+  font-weight: 550;
+}
+.proctor-matrix .sticky-score {
+  left: 122px;
+  width: 55px;
+  min-width: 55px;
+  max-width: 55px;
+  font-size: 12px;
+  background: #fafafd;
+}
+.proctor-matrix .sticky-score small {
+  display: inline;
+  font-size: 10px;
+  margin-left: 4px;
+  font-weight: 400;
+}
+.proctor-matrix .teacher-slot,
+.proctor-matrix .room-slot {
+  height: 31px;
+  min-height: 31px;
+  padding: 3px 5px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.proctor-matrix .teacher-slot > span {
+  font-size: 13px;
+}
+.proctor-matrix .unavailable-reason {
+  font-size: 11px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+.proctor-matrix .unavailable-slot {
+  background: #f6f6f8;
+  color: #a0a0ab;
+}
+.proctor-matrix .unavailable-slot button {
+  opacity: 1;
+  color: #9898a3;
+}
+.proctor-matrix .date-end {
+  border-right: 2px solid #d1d5df;
+}
+.proctor-matrix thead th.day-color-0 {
+  background: #f0f4fc !important;
+}
+.proctor-matrix thead th.day-color-1 {
+  background: #f0f6f3 !important;
+}
+.proctor-matrix thead th.day-color-2 {
+  background: #f5f2f9 !important;
+}
+.proctor-matrix.room-view .sticky-name,
+.time-matrix .sticky-name {
+  left: 0;
+}
+.time-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.time-scroll {
+  max-height: calc(100vh - 300px);
+}
+.time-matrix td select {
+  border: 0;
+  background: none;
+  font-size: 13px;
+  min-height: 31px;
+  padding: 3px 5px;
+  width: 100%;
+}
+.time-matrix td input {
+  border: 0;
+  background: none;
+  min-height: 30px;
+  padding: 3px 6px;
+  width: 155px;
+  font-size: 13px;
+}
+.time-matrix td button {
+  min-height: 25px;
+  font-size: 11px;
+  padding: 3px 6px;
+  margin: 2px 5px;
+}
+.time-excluded {
+  background: #fff1ed;
+  color: #a86c55;
+}
+.time-unavailable {
+  background: #f0f0f4;
+  color: #8a8a94;
+}
+@media (max-width: 1100px) {
+  .app {
+    --sidebar: 190px;
+  }
+  main {
+    padding: 20px;
+  }
+  .grade-room-box {
+    grid-template-columns: 124px minmax(0, 1fr);
+    gap: 10px;
+  }
+  .room-bulk {
+    grid-column: 2;
+  }
+  .extra-room-grid .grade-room-box {
+    grid-template-columns: 124px minmax(0, 1fr);
+  }
+  .assignment-workflow .workflow-search {
+    width: 130px;
+  }
+  .workflow-tabs button {
+    font-size: 12px;
+    padding: 6px 9px;
+  }
+  .column-mapping {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sidebar nav .nav-group > button.active:only-child small {
+  background: #ffffff33;
+  color: #fff;
+}
+.notice button {
+  box-shadow: none;
+  background: none;
+  color: var(--blue);
+}
+/* Availability: one checkbox per period. Checked = can proctor. */
+.time-matrix td.time-cell {
+  padding: 0;
+  text-align: center;
+  background: var(--surface);
+}
+.time-matrix td.time-blocked {
+  background: var(--red-soft);
+}
+.time-matrix td.time-designated {
+  background: #007aff0f;
+}
+.time-matrix .designated-row .sticky-name {
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+.time-matrix .role-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #007aff17;
+  color: var(--blue-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+.time-matrix td.placement-cell {
+  min-width: 152px;
+  padding: 0 8px;
+  white-space: nowrap;
+}
+.time-matrix td.placement-cell select {
+  width: 136px;
+  min-height: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue-ink);
+  background: #007aff0f;
+  box-shadow: none;
+  border-radius: 8px;
+}
+.time-matrix td.placement-cell .muted {
+  color: #c7c7cc;
+  font-size: 13px;
+}
+.time-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 56px;
+  height: 36px;
+  cursor: pointer;
+}
+.time-check:hover {
+  background: #007aff0a;
+}
+.time-matrix .time-check input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1.5px #d8d8dd;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+.time-matrix .time-check input:checked {
+  background: var(--blue)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3L15 6.5' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 20px no-repeat;
+  box-shadow: none;
+}
+/* Normal teachers: a checked cell means "cannot proctor", shown as a red x. */
+.time-matrix tr:not(.designated-row) .time-check input:checked {
+  box-shadow: inset 0 0 0 1.5px #c9483f59;
+  background: #fbe9e7
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6.5 6.5l7 7M13.5 6.5l-7 7' fill='none' stroke='%23c9483f' stroke-width='2.3' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 20px no-repeat;
+}
+.time-matrix .time-check input:focus-visible {
+  outline: 3px solid #007aff4d;
+  outline-offset: 2px;
+}
+
+/* ---------- Teacher import: link or file, then map columns on the preview ---------- */
+.import-sources {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.import-sources .import-source {
+  margin: 0;
+}
+.import-source h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.import-source h3 svg {
+  color: var(--blue);
+}
+.link-row {
+  display: flex;
+  gap: 8px;
+}
+.link-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--canvas);
+}
+.import-source.loaded .ok {
+  color: #34c759;
+}
+.import-source.loaded .sheet-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.link-button,
+.original-workflow .link-button {
+  margin-left: auto;
+  box-shadow: none;
+  background: none;
+  color: var(--blue);
+  font-weight: 600;
+}
+.import-mapping > p {
+  font-size: 13px;
+  color: var(--muted);
+  margin: -4px 0 10px;
+}
+.mapping-scroll {
+  max-height: none;
+  overflow-x: auto;
+  margin-bottom: 18px;
+}
+.mapping-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  min-width: 100%;
+}
+.mapping-table th,
+.mapping-table td {
+  min-width: 140px;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mapping-table th:last-child,
+.mapping-table td:last-child {
+  border-right: 0;
+}
+.mapping-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.mapping-table th {
+  background: #f9f9fb;
+  vertical-align: top;
+}
+.mapping-table th select {
+  width: 100%;
+  min-height: 32px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+}
+.mapping-table th.mapped select {
+  color: #fff;
+  background-color: var(--blue);
+  box-shadow: none;
+}
+.mapping-table .column-name {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.mapping-table td {
+  color: #aeaeb2;
+}
+.mapping-table td.mapped {
+  color: var(--ink);
+  background: #007aff08;
+}
+.destructive,
+.original-workflow .destructive {
+  color: var(--red);
+}
+.destructive:hover,
+.original-workflow .destructive:hover {
+  background: var(--red-soft);
+}
+
+/* ---------- Schedule: type into cells ---------- */
+.schedule-grid td.subject-td {
+  position: relative;
+  padding: 0;
+  height: 52px;
+  vertical-align: middle;
+}
+.original-workflow .schedule-grid .subject-input {
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  padding: 6px 10px 18px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--ink);
+}
+.schedule-grid .subject-input::-webkit-calendar-picker-indicator {
+  display: none !important;
+}
+.original-workflow .schedule-grid .subject-input::placeholder {
+  color: #d1d1d6;
+  font-weight: 500;
+}
+.original-workflow .schedule-grid .subject-input:hover {
+  background: #7676800a;
+}
+.original-workflow .schedule-grid .subject-input:focus {
+  background: #007aff0a;
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+.original-workflow .schedule-grid .subject-multi {
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 8px 18px;
+  border-radius: 0;
+  box-shadow: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: normal;
+}
+.cell-tools {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 3px;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+.original-workflow .cell-tools button {
+  pointer-events: auto;
+  min-height: 0;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  box-shadow: none;
+  background: none;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  transform: none;
+}
+.original-workflow .cell-tools .room-count {
+  opacity: 0;
+}
+.original-workflow .cell-tools .room-count.partial,
+.subject-td:hover .cell-tools .room-count,
+.subject-td:focus-within .cell-tools .room-count {
+  opacity: 1;
+}
+.original-workflow .cell-tools .room-count.partial {
+  color: #c05a00;
+  background: #ff95001a;
+}
+.original-workflow .cell-tools .fill-grades {
+  display: none;
+  color: #fff;
+  background: var(--blue);
+}
+.subject-td:hover .cell-tools .fill-grades,
+.subject-td:focus-within .cell-tools .fill-grades {
+  display: inline-flex;
+}
+.original-workflow .cell-tools button:hover {
+  color: var(--blue);
+  background: #007aff14;
+}
+.original-workflow .cell-tools .fill-grades:hover {
+  color: #fff;
+  background: #0a72ea;
+}
+
+/* ---------- Teacher roles ---------- */
+.original-workflow .original-teacher-table select.role-chip {
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  min-width: 0;
+  min-height: 28px;
+  height: 28px;
+  padding: 0 24px 0 10px;
+  border-radius: 14px;
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 9px 6px;
+}
+.role-chip.role-normal { background-color: #7676801a; color: #48484a; }
+.role-chip.role-designated { background-color: #007aff14; color: #1f5fa8; }
+.role-chip.role-lecturer { background-color: #5856d614; color: #4a48a6; }
+.role-chip.role-support { background-color: #30b0c717; color: #1e7483; }
+.role-chip.role-roaming { background-color: #af52de14; color: #7d3fa0; }
+.role-chip.role-hallway { background-color: #ff950017; color: #9a5a0c; }
+.role-chip.role-excluded { background-color: var(--red-soft); color: #b3362f; }
+.original-workflow .review-badge {
+  display: inline-flex;
+  margin: 2px auto 0;
+  min-height: 0;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  box-shadow: none;
+  background: #ff95001f;
+  color: #9a5a0c;
+  font-size: 11px;
+  font-weight: 700;
+}
+.needs-review {
+  color: #9a5a0c;
+}
+@media (max-width: 1100px) {
+  .exam-date-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- Toolbar: labelled undo/redo and an explicit save ---------- */
+.history-buttons {
+  display: inline-flex;
+  gap: 2px;
+}
+.top-actions .history-buttons button {
+  min-height: 30px;
+  padding: 0 9px;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 560;
+}
+.top-actions .history-buttons button:disabled {
+  color: #c7c7cc;
+  opacity: 1;
+}
+.top-actions .save-button,
+.top-actions .save-button:hover {
+  min-height: 30px;
+  padding: 0 16px;
+  border-radius: 15px;
+  color: #fff;
+  background: var(--blue);
+}
+.save-state:has(+ .history-buttons) {
+  margin-right: 4px;
+}
+
+/* ---------- Exam day header: period stepper ---------- */
+.exam-date-card .actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.period-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.period-stepper span b {
+  font-size: 15px;
+  color: var(--ink);
+  margin-right: 1px;
+}
+.original-workflow .exam-date-card .period-stepper button {
+  width: 34px;
+  min-width: 34px;
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 0;
+  background: var(--fill);
+  color: var(--ink);
+  box-shadow: none;
+}
+.original-workflow .exam-date-card .period-stepper button:first-of-type {
+  border-radius: 8px 0 0 8px;
+  margin-left: 2px;
+  position: relative;
+}
+.original-workflow .exam-date-card .period-stepper button:last-of-type {
+  border-radius: 0 8px 8px 0;
+  margin-left: -8px;
+  box-shadow: inset 1px 0 0 #8e8e9340;
+}
+.original-workflow .exam-date-card .period-stepper button:hover:not(:disabled) {
+  background: #76768033;
+}
+.original-workflow .exam-date-card .icon-btn {
+  min-width: 30px;
+  min-height: 28px;
+  background: none;
+  color: #aeaeb2;
+}
+.original-workflow .exam-date-card .icon-btn:hover {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+/* ---------- Subject cell tools ---------- */
+.original-workflow .cell-tools .split-subject {
+  display: none;
+}
+.subject-td:hover .cell-tools .split-subject,
+.subject-td:focus-within .cell-tools .split-subject {
+  display: inline-flex;
+}
+.cell-tools .room-count {
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  color: #9a5a0c;
+  background: #ff95001a;
+}
+.original-workflow .schedule-grid .subject-multi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  line-height: 1.3;
+}
+.subject-multi small {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Ghost button: text-only action that fills on hover. */
+.ghost,
+.original-workflow .ghost {
+  background: none;
+  box-shadow: none;
+  color: var(--blue);
+  font-weight: 600;
+}
+.ghost:hover:not(:disabled),
+.original-workflow .ghost:hover:not(:disabled) {
+  background: #007aff12;
+}
+.assignment-workflow .selection-guide.conflict-guide {
+  background: none;
+  color: var(--red);
+}
+.assignment-workflow .selection-guide svg {
+  flex-shrink: 0;
+}
+
+/* ---------- Timetable import ---------- */
+.timetable-tabs {
+  margin-bottom: 14px;
+}
+.school-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+  margin-top: 12px;
+}
+.original-workflow .school-list button,
+.school-list button {
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  box-shadow: none;
+  background: var(--fill-2);
+  font-size: 14px;
+}
+.school-list button small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.school-list button.selected {
+  background: #007aff17;
+  color: var(--blue-ink);
+}
+.timetable-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 18px;
+  font-size: 12px;
+}
+.timetable-sources span {
+  padding: 4px 9px;
+  border-radius: 7px;
+  background: #7676801a;
+  color: var(--secondary);
+  font-weight: 600;
+}
+.timetable-sources span:first-child {
+  background: none;
+  padding-left: 0;
+  color: var(--ink);
+}
+.timetable-sources .source-week {
+  background: #34c7591f;
+  color: #1d7a36;
+}
+.timetable-sources .source-base {
+  background: #007aff14;
+  color: var(--blue-ink);
+}
+.timetable-sources .source-none {
+  color: #aeaeb2;
+}
+.import-preview td select {
+  min-width: 190px;
+}
+.muted-cell {
+  color: var(--muted);
+}
+
+/* ---------- Round 2: legible ghost buttons, tab bar, compact headers ---------- */
+/* Ghost: white fill with an Apple-blue outline so it reads as a button on gray. */
+.ghost,
+.original-workflow .ghost {
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--blue);
+  color: var(--blue);
+  font-weight: 600;
+}
+.ghost:hover:not(:disabled),
+.original-workflow .ghost:hover:not(:disabled) {
+  background: #f2f7ff;
+}
+.ghost:disabled,
+.original-workflow .ghost:disabled {
+  box-shadow: inset 0 0 0 1px #c7c7cc;
+  color: #aeaeb2;
+  opacity: 1;
+}
+/* Tabbed groups: the numbered tab bar is the header. */
+main {
+  padding-top: 16px;
+}
+.page-heading.tabbed {
+  display: none;
+}
+.page-heading h1 {
+  font-size: 24px;
+}
+.section-tabs {
+  display: flex;
+  width: 100%;
+  max-width: none;
+  gap: 28px;
+  padding: 0;
+  margin: 0 0 18px;
+  border-radius: 0;
+  background: none;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+.section-tabs button {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 2px;
+  gap: 8px;
+  border-radius: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  box-shadow: none;
+}
+.section-tabs button + button::before {
+  display: none;
+}
+.section-tabs button:hover {
+  color: var(--ink);
+  background: none;
+}
+.section-tabs button[aria-selected="true"] {
+  color: var(--ink);
+  background: none;
+  box-shadow: inset 0 -2.5px 0 var(--blue);
+}
+.tab-num {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #7676801f;
+  color: var(--secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+[aria-selected="true"] > .tab-num {
+  background: var(--blue);
+  color: #fff;
+}
+.workflow-panel-head h2,
+.room-disclosure summary {
+  font-size: 17px;
+}
+.original-workflow {
+  gap: 24px;
+}
+.step-intro {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+/* Period marks: SF-style circles — checkmark.circle.fill for "proctors",
+   minus.circle.fill for "cannot proctor". No cell fills. */
+.time-matrix td.time-blocked,
+.time-matrix td.time-designated {
+  background: none;
+}
+.time-matrix .time-check input {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px #d1d1d6;
+}
+.time-matrix .time-check input:checked {
+  background: var(--blue)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6 10.3l2.7 2.7L14 7.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / 20px no-repeat;
+  box-shadow: none;
+}
+.time-matrix tr:not(.designated-row) .time-check input:checked {
+  background: #e0685f
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M6.5 10h7' fill='none' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+    center / 20px no-repeat;
+  box-shadow: none;
+}
+.time-matrix .time-check:hover input:not(:checked) {
+  box-shadow: inset 0 0 0 1.5px #aeaeb2;
+}
+.import-preview tr.row-off td {
+  color: var(--muted);
+}
+.import-preview td input[type="checkbox"],
+.import-preview th input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  accent-color: var(--blue);
+}
+
+/* Ghost: white fill and blue text; the white already sets it apart from the gray canvas. */
+.ghost,
+.original-workflow .ghost {
+  box-shadow:
+    0 0 0 0.5px #0000001f,
+    0 1px 2px #0000000d;
+}
+.ghost:disabled,
+.original-workflow .ghost:disabled {
+  box-shadow: 0 0 0 0.5px #0000001a;
+}
+.time-settings .workflow-filter {
+  justify-content: flex-start;
+}
+.workflow-filter .push-right {
+  margin-left: auto;
+}
+
+/* ---------- Calendar picker (Google Calendar mini-month) ---------- */
+.calendar {
+  width: 300px;
+  user-select: none;
+}
+.calendar-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 0 8px 6px;
+}
+.calendar-head b {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.calendar-head button,
+.original-workflow .calendar-head button {
+  width: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+  color: var(--secondary);
+}
+.calendar-head .calendar-today,
+.original-workflow .calendar-head .calendar-today {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+}
+.calendar-head button:hover {
+  background: #7676801a;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 2px;
+  justify-items: center;
+}
+.calendar-week {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  line-height: 28px;
+}
+.calendar-week.w0,
+.calendar-day.w0 {
+  color: #d14b43;
+}
+.calendar-week.w6,
+.calendar-day.w6 {
+  color: #3a72c9;
+}
+.calendar-day,
+.original-workflow .calendar-day {
+  position: relative;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  transform: none;
+}
+.calendar-day:hover:not(:disabled) {
+  background: #7676801a;
+}
+.calendar-day.today {
+  box-shadow: inset 0 0 0 1.5px var(--blue);
+  color: var(--blue);
+  font-weight: 700;
+}
+.calendar-day.selected,
+.calendar-day.selected:hover {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px #007aff4d;
+}
+.calendar-day.marked::after {
+  content: "";
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--blue);
+}
+.calendar-day.selected.marked::after {
+  background: #fff;
+}
+.calendar-day:disabled {
+  opacity: 1;
+  color: #c7c7cc;
+  cursor: default;
+}
+.calendar-note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--secondary);
+  min-height: 20px;
+}
+.workflow-modal .calendar {
+  margin: 4px auto 0;
+  padding: 14px;
+  width: 330px;
+  background: var(--surface);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+.date-field {
+  position: relative;
+  display: inline-block;
+}
+.date-field > button,
+.original-workflow .date-field > button {
+  min-height: 24px;
+  height: 24px;
+  padding: 0 6px;
+  margin-left: -6px;
+  gap: 5px;
+  border-radius: 6px;
+  background: none;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.date-field > button:hover,
+.date-field > button[aria-expanded="true"] {
+  background: #7676801a;
+  color: var(--ink);
+}
+.calendar-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -6px;
+  z-index: 40;
+  padding: 14px;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 0.5px #0000001a,
+    0 12px 32px #00000026;
+}
+
+/* ---------- Excel export ---------- */
+.page-heading {
+  gap: 8px;
+}
+.page-heading > div:first-child {
+  margin-right: auto;
+}
+.export-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--secondary);
+  margin: 4px 0 8px;
+}
+.export-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.export-dates label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px #d1d1d6;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.export-dates label.on {
+  background: #007aff14;
+  box-shadow: inset 0 0 0 1px #007aff66;
+  color: var(--blue-ink);
+}
+.export-layouts {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+.export-layouts label,
+.export-overview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--surface);
+  cursor: pointer;
+}
+.export-layouts span,
+.export-overview span {
+  display: flex;
+  flex-direction: column;
+}
+.export-layouts b,
+.export-overview b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.export-layouts small,
+.export-overview small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.export-overview {
+  margin-top: 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+}
+.export-dates input,
+.export-layouts input,
+.export-overview input {
+  width: 17px;
+  height: 17px;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--blue);
+}
+/* The date field lives in the exam-day header, whose button styles must not leak in. */
+.original-workflow .exam-date-card header .date-field > button {
+  min-height: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+.original-workflow .exam-date-card header .date-field > button:hover,
+.original-workflow .exam-date-card header .date-field > button[aria-expanded="true"] {
+  background: #7676801a;
+  color: var(--ink);
+}
+.original-workflow .exam-date-card header .calendar-day {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+}
+.original-workflow .exam-date-card header .calendar-day.w0 { color: #d14b43; }
+.original-workflow .exam-date-card header .calendar-day.w6 { color: #3a72c9; }
+.original-workflow .exam-date-card header .calendar-day:hover:not(:disabled) {
+  background: #7676801a;
+}
+.original-workflow .exam-date-card header .calendar-day.today {
+  color: var(--blue);
+  box-shadow: inset 0 0 0 1.5px var(--blue);
+}
+.original-workflow .exam-date-card header .calendar-day.selected {
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 2px 6px #007aff4d;
+}
+.original-workflow .exam-date-card header .calendar-day:disabled {
+  color: #c7c7cc;
+}
+.original-workflow .exam-date-card header .calendar-head button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--secondary);
+}
+.original-workflow .exam-date-card header .calendar-head .calendar-today {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 16px;
+  color: var(--blue);
+}
+.original-workflow .exam-date-card header .calendar-head button:hover {
+  background: #7676801a;
+}

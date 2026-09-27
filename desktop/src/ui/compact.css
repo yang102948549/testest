@@ -1,0 +1,1234 @@
+/* One visual system: restrained controls, dense grids, one scroll region. */
+:root {
+  --ink: #24272d;
+  --muted: #727780;
+  --line: #e1e3e7;
+  --blue: #2563b5;
+}
+body {
+  font-size: 13px;
+}
+.app {
+  --sidebar: 176px;
+  height: 100vh;
+  overflow: hidden;
+}
+.workspace {
+  min-height: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar {
+  padding: 18px 12px 10px;
+}
+.brand {
+  padding: 0 8px;
+  margin-bottom: 22px;
+  font-size: 17px;
+}
+.brand-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+.sidebar nav button {
+  font-size: 13px;
+  padding: 9px 10px;
+  border-radius: 6px;
+}
+.nav-label,
+.sidebar-note {
+  display: none;
+}
+.new-exam {
+  margin: 0 0 18px;
+  min-height: 32px;
+}
+.topbar {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+.breadcrumb {
+  font-size: 12px;
+  max-width: 65%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.save-state {
+  font-size: 11px;
+}
+main {
+  padding: 16px 20px 12px;
+  margin: 0;
+  max-width: none;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.page-heading {
+  margin: 0 0 12px;
+  min-height: 30px;
+}
+.page-heading h1 {
+  font-size: 20px;
+  letter-spacing: -0.4px;
+}
+.page-heading .primary {
+  min-height: 30px;
+  padding: 5px 11px;
+  font-size: 12px;
+}
+main > footer {
+  display: none;
+}
+.notice {
+  padding: 7px 20px;
+  min-height: 32px;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+button,
+input,
+select {
+  border-radius: 5px;
+  font-size: 13px;
+  min-height: 30px;
+}
+button {
+  padding: 5px 10px;
+}
+.section-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.section-tabs button {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  padding: 6px 0 10px;
+  color: #747981;
+}
+.section-tabs button[aria-selected="true"] {
+  color: #24272d;
+  font-weight: 600;
+  border-bottom-color: #24272d;
+}
+.original-workflow {
+  gap: 14px;
+}
+.workflow-panel {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+.workflow-panel-head {
+  margin-bottom: 12px;
+  min-height: 28px;
+  gap: 12px;
+}
+.workflow-panel-head h2 {
+  font-size: 14px;
+  font-weight: 600;
+}
+.workflow-panel-head p {
+  font-size: 12px;
+  margin-top: 3px;
+  color: #727780;
+}
+.workflow-table-scroll {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+}
+.workflow-filter {
+  margin: 8px 0;
+  gap: 12px;
+  min-height: 30px;
+}
+.workflow-search {
+  width: 210px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 5px;
+}
+.workflow-search input {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 4px;
+}
+.workflow-filter select {
+  font-size: 12px;
+  padding: 4px 8px;
+  min-height: 30px;
+}
+.workflow-tabs {
+  padding: 2px;
+  border-radius: 5px;
+  background: #f0f1f3;
+}
+.workflow-tabs button {
+  min-height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+.workflow-tabs button.active {
+  color: #24272d;
+  box-shadow: 0 1px 3px #0001;
+}
+.step-footer {
+  position: static;
+  border: 0;
+  padding: 10px 0 0;
+  background: none;
+  min-height: 34px;
+}
+.step-footer span {
+  font-size: 11px;
+}
+.step-footer button {
+  font-size: 12px;
+  min-height: 30px;
+  padding: 5px 10px;
+}
+.step-footer small {
+  display: none;
+}
+.exam-title-field {
+  margin: 0;
+}
+.exam-title-field label {
+  font-size: 12px;
+  gap: 12px;
+}
+.exam-title-field input {
+  height: 30px;
+  min-height: 30px;
+  max-width: 440px;
+  font-size: 13px;
+}
+.room-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 9px 12px;
+}
+.room-disclosure summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+.room-disclosure summary span {
+  font-weight: 400;
+  color: #747981;
+  margin-left: 12px;
+  font-size: 12px;
+}
+.room-disclosure[open] > .workflow-panel {
+  margin-top: 14px;
+}
+.grade-room-box {
+  padding: 12px;
+  border-radius: 5px;
+  background: #fafafa;
+}
+.grade-room-box header {
+  margin-bottom: 8px;
+}
+.grade-room-box h3 {
+  font-size: 13px;
+}
+.editable-chip {
+  border-radius: 4px;
+  min-height: 29px;
+}
+.editable-chip input {
+  height: 27px;
+  min-height: 27px;
+  font-size: 12px;
+}
+.room-bulk {
+  padding-top: 8px;
+  margin-top: 8px;
+}
+.room-bulk input {
+  min-height: 28px;
+  height: 28px;
+}
+.exam-date-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.exam-date-card {
+  border-radius: 5px;
+  padding: 12px;
+}
+.exam-date-card > header {
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.exam-date-card h3 {
+  font-size: 13px;
+}
+.exam-date-card header input {
+  font-size: 11px;
+  height: 25px;
+  min-height: 25px;
+  padding: 2px 0;
+}
+.exam-date-card header button {
+  min-height: 26px;
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.schedule-grid th {
+  font-size: 12px;
+  padding: 7px 4px;
+  background: #f3f4f6;
+}
+.schedule-grid td {
+  padding: 0;
+}
+.schedule-grid .subject-cell {
+  min-height: 47px;
+  padding: 5px;
+  border-radius: 0;
+  font-size: 13px;
+}
+.subject-chip {
+  padding: 2px 3px;
+  background: none;
+}
+.subject-chip b {
+  font-size: 13px;
+}
+.subject-chip small {
+  font-size: 10px;
+}
+.teacher-table th,
+.teacher-table td {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.teacher-table input,
+.teacher-table select {
+  min-height: 29px;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.chip-picker {
+  min-height: 28px;
+  padding: 3px 5px;
+}
+.picker-chip {
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+.mode-card {
+  padding: 12px;
+  border-radius: 5px;
+  margin-bottom: 16px;
+  background: #f6f7f8;
+}
+.mode-card h3 {
+  font-size: 14px;
+}
+.mode-card p {
+  font-size: 12px;
+}
+.original-settings {
+  gap: 20px;
+}
+.original-settings > div {
+  padding: 12px;
+  border-radius: 5px;
+}
+.original-settings h3 {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.original-settings label {
+  font-size: 12px;
+  min-height: 34px;
+}
+.single-day {
+  border-radius: 5px;
+  padding: 12px;
+}
+.single-period {
+  padding: 8px 0;
+}
+.room-tile {
+  min-height: 30px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.workflow-modal {
+  border-radius: 10px;
+}
+.workflow-modal-head {
+  padding: 16px 20px;
+}
+.workflow-modal-head h2 {
+  font-size: 17px;
+}
+.workflow-modal-body {
+  padding: 16px 20px;
+}
+.workflow-modal-footer {
+  padding: 12px 20px;
+}
+/* Result grid is the workspace; toolbars never push it out of view. */
+.page-assignments main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.assignment-workflow {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assignment-summary {
+  padding: 6px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  min-height: 30px;
+  gap: 18px;
+  font-size: 12px;
+}
+.assignment-summary b {
+  font-size: 13px;
+}
+.assignment-summary button {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+.assignment-workflow > .workflow-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.assignment-workflow .workflow-panel-head {
+  margin: 0 0 6px;
+  min-height: 30px;
+}
+.assignment-workflow .workflow-panel-head h2 {
+  display: none;
+}
+.assignment-workflow .selection-guide {
+  padding: 4px 0;
+  min-height: 26px;
+  border: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 12px;
+  margin: 0;
+}
+.assignment-controls {
+  min-height: 30px;
+  margin: 4px 0;
+  gap: 10px;
+}
+.assignment-controls button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.apply-button {
+  background: #2563b5 !important;
+  border-color: #2563b5 !important;
+}
+.assignment-workflow .workflow-filter {
+  margin: 3px 0 8px;
+}
+.proctor-scroll {
+  flex: 1;
+  min-height: 100px;
+  max-height: none;
+  overflow: auto;
+}
+.proctor-matrix {
+  font-size: 12px;
+  width: 100%;
+  min-width: max-content;
+  table-layout: fixed;
+}
+.proctor-matrix th,
+.proctor-matrix td {
+  height: 29px;
+  min-width: 60px;
+  border-color: #e0e3e7;
+  font-size: 12px;
+}
+.proctor-matrix thead th {
+  height: 28px;
+  padding: 3px 6px;
+  top: 0;
+  background: #f0f2f4;
+  color: #414751;
+}
+.proctor-matrix thead tr:nth-child(2) th {
+  top: 28px;
+  height: 25px;
+  background: #f7f8f9;
+}
+.proctor-matrix thead tr:nth-child(3) th {
+  top: 53px;
+  height: 24px;
+}
+.proctor-matrix .sticky-sequence {
+  left: 0;
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  background: #fafafa;
+}
+.proctor-matrix .sticky-name {
+  left: 32px;
+  width: 88px;
+  min-width: 88px;
+  max-width: 110px;
+  font-size: 12px;
+  background: #fafafa;
+  padding: 3px 6px;
+}
+.proctor-matrix .sticky-score {
+  left: 120px;
+  width: 55px;
+  min-width: 55px;
+  max-width: 55px;
+  background: #fafafa;
+  font-size: 12px;
+}
+.proctor-matrix .sticky-score small {
+  display: inline;
+  margin-left: 4px;
+  font-size: 10px;
+  font-weight: 400;
+}
+.proctor-matrix .teacher-slot,
+.proctor-matrix .room-slot {
+  height: 28px;
+  min-height: 28px;
+  padding: 2px 5px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.proctor-matrix .teacher-slot > span {
+  font-size: 12px;
+}
+.proctor-matrix .unavailable-reason {
+  font-size: 11px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+.proctor-matrix .unavailable-slot {
+  background: #f4f4f5;
+  color: #90959d;
+}
+.proctor-matrix .unavailable-slot button {
+  opacity: 1;
+  color: #90959d;
+}
+.proctor-matrix .date-end {
+  border-right: 2px solid #bdc3cc;
+}
+.proctor-matrix .day-color-0,
+.proctor-matrix .day-color-1,
+.proctor-matrix .day-color-2 {
+  background: #f0f2f4;
+}
+.proctor-matrix.room-view .sticky-name,
+.time-matrix .sticky-name {
+  left: 0;
+}
+.workflow-legend {
+  padding: 5px 0 0;
+  margin: 0;
+  gap: 14px;
+  font-size: 11px;
+  min-height: 24px;
+}
+.workflow-legend i {
+  width: 10px;
+  height: 10px;
+}
+.time-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.inline-help {
+  color: #747981;
+  font-size: 12px;
+  margin: 4px 0;
+}
+.time-scroll {
+  max-height: calc(100vh - 245px);
+}
+.time-matrix td select {
+  border: 0;
+  background: transparent;
+  min-height: 28px;
+  padding: 2px 4px;
+  width: 100%;
+  font-size: 11px;
+}
+.time-matrix td input {
+  border: 0;
+  min-height: 27px;
+  padding: 2px 6px;
+  width: 150px;
+  font-size: 12px;
+}
+.time-matrix td button {
+  font-size: 11px;
+  min-height: 24px;
+  padding: 2px 5px;
+  margin: 2px 5px;
+}
+.time-excluded {
+  background: #fff1ed;
+  color: #a44f35;
+}
+.time-unavailable {
+  background: #eeeef0;
+  color: #777;
+}
+@media (max-width: 1100px) {
+  .app {
+    --sidebar: 155px;
+  }
+  main {
+    padding: 12px 14px;
+  }
+  .sidebar nav button {
+    font-size: 12px;
+  }
+  .assignment-summary {
+    gap: 12px;
+  }
+  .inline-help {
+    font-size: 11px;
+  }
+}
+.original-teacher-table th,
+.original-teacher-table td {
+  padding: 5px 8px;
+  font-size: 12px;
+}
+.original-teacher-table input,
+.original-teacher-table select {
+  min-height: 29px;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+.original-teacher-table .chip-field {
+  min-height: 29px;
+  padding: 3px 5px;
+}
+.original-teacher-table .data-chip {
+  font-size: 11px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #f1f3f5;
+  color: #505966;
+}
+.original-workflow .workflow-panel {
+  padding: 0;
+  margin: 0;
+}
+.assignment-summary {
+  margin: 0;
+  height: 30px;
+  flex-shrink: 0;
+}
+.assignment-workflow > .workflow-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 32px 32px 25px minmax(100px, 1fr) 24px;
+  gap: 4px 12px;
+}
+.assignment-workflow .workflow-panel-head {
+  grid-row: 1;
+  grid-column: 1;
+  justify-content: flex-start;
+  margin: 0;
+}
+.assignment-workflow .workflow-filter {
+  grid-row: 1;
+  grid-column: 2;
+  margin: 0;
+}
+.assignment-workflow .assignment-controls {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.assignment-workflow .selection-guide {
+  grid-row: 3;
+  grid-column: 1 / -1;
+}
+.assignment-workflow .proctor-scroll {
+  grid-row: 4;
+  grid-column: 1 / -1;
+}
+.assignment-workflow .workflow-legend {
+  grid-row: 5;
+  grid-column: 1 / -1;
+}
+.proctor-matrix thead th[class*="day-color-"] {
+  background: #eef0f3;
+}
+.proctor-matrix thead tr:nth-child(2) th[class*="day-color-"] {
+  background: #f8f9fa;
+}
+.sidebar-bottom {
+  margin-top: auto;
+}
+@media (max-width: 1100px) {
+  .assignment-workflow .workflow-search {
+    width: 130px;
+  }
+  .assignment-workflow .workflow-tabs button {
+    font-size: 11px;
+    padding: 4px 7px;
+  }
+}
+
+.proctor-matrix thead th[class*="day-color-"] {
+  background: #eef0f3 !important;
+}
+.proctor-matrix thead tr:nth-child(2) th[class*="day-color-"] {
+  background: #f8f9fa !important;
+}
+/* Accessible settings: visible navigation, comfortable controls, soft color. */
+:root {
+  --blue: #007aff;
+  --ink: #1d1d1f;
+  --muted: #626976;
+  --line: #dfe4eb;
+}
+body {
+  font-size: 15px;
+}
+.app {
+  --sidebar: 228px;
+}
+.sidebar {
+  background: #f5f6f8;
+  padding: 22px 14px 12px;
+}
+.brand {
+  font-size: 20px;
+}
+.sidebar nav .nav-group > button {
+  font-size: 15px;
+  padding: 11px 12px;
+  width: 100%;
+}
+.nav-group {
+  margin-bottom: 12px;
+}
+.nav-children {
+  display: grid;
+  gap: 3px;
+  margin: 5px 0 0 26px;
+}
+.sidebar nav .nav-children button {
+  padding: 9px 10px;
+  justify-content: flex-start;
+  font-size: 14px;
+  color: #626976;
+  background: none;
+}
+.sidebar nav .nav-children button[aria-current="page"] {
+  color: #0067d9;
+  background: #e8f1ff;
+  font-weight: 600;
+}
+.sidebar nav button.active {
+  color: #0067d9;
+  background: #e5effe;
+}
+.new-exam {
+  min-height: 40px;
+  font-size: 15px;
+  border-radius: 9px;
+}
+main {
+  padding: 22px 24px 18px;
+}
+.topbar {
+  min-height: 48px;
+  height: 48px;
+}
+.breadcrumb,
+.save-state {
+  font-size: 13px;
+}
+.page-heading {
+  margin-bottom: 18px;
+}
+.page-heading h1 {
+  font-size: 25px;
+}
+.page-heading .primary {
+  min-height: 38px;
+  font-size: 14px;
+  padding: 8px 14px;
+}
+button,
+input,
+select,
+textarea {
+  font-size: 15px;
+  border-radius: 8px;
+  min-height: 38px;
+}
+.primary {
+  background: #007aff;
+  border-color: #007aff;
+  color: white;
+}
+.primary:hover {
+  background: #006de5;
+  border-color: #006de5;
+}
+.section-tabs {
+  border: 0;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.section-tabs button {
+  flex: 1;
+  padding: 14px 18px;
+  text-align: left;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #e0e5ec;
+  border-radius: 12px;
+  background: #f8f9fb;
+  white-space: normal;
+}
+.section-tabs button b {
+  font-size: 16px;
+  font-weight: 600;
+}
+.section-tabs button small {
+  font-size: 13px;
+  color: #647084;
+}
+.section-tabs button[aria-selected="true"] {
+  color: #0067d9;
+  border-color: #9ec8ff;
+  background: #edf5ff;
+}
+.original-workflow {
+  gap: 22px;
+}
+.workflow-panel-head {
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.workflow-panel-head h2 {
+  font-size: 18px;
+}
+.workflow-panel-head p {
+  font-size: 14px;
+  margin-top: 6px;
+  color: #647084;
+}
+.workflow-panel-head .actions {
+  flex-wrap: wrap;
+}
+.workflow-search {
+  min-height: 38px;
+  width: 240px;
+  border-radius: 8px;
+}
+.workflow-search input {
+  min-height: 36px;
+  font-size: 14px;
+}
+.workflow-filter select {
+  min-height: 38px;
+  font-size: 14px;
+}
+.exam-title-field label {
+  font-size: 15px;
+}
+.exam-title-field input {
+  min-height: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+.room-disclosure {
+  padding: 16px;
+  background: #fbfcfe;
+  border-radius: 12px;
+}
+.room-disclosure summary {
+  font-size: 17px;
+  color: #253552;
+}
+.room-disclosure summary span {
+  font-size: 14px;
+}
+.room-disclosure[open] > .workflow-panel {
+  margin-top: 20px;
+}
+.grade-room-box {
+  background: #f1f6ff;
+  border-color: #dce8fa;
+  padding: 16px;
+  border-radius: 10px;
+}
+.grade-room-box:nth-child(2) {
+  background: #f2f8f4;
+  border-color: #dfeee3;
+}
+.grade-room-box:nth-child(3) {
+  background: #f8f4fc;
+  border-color: #ebe2f4;
+}
+.grade-room-box h3 {
+  font-size: 16px;
+}
+.editable-chip {
+  min-height: 36px;
+  border-radius: 7px;
+}
+.editable-chip input {
+  font-size: 14px;
+  min-height: 34px;
+  height: 34px;
+}
+.room-bulk input {
+  min-height: 36px;
+  height: 36px;
+}
+.exam-date-grid {
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 16px;
+}
+.exam-date-card {
+  border-radius: 10px;
+  padding: 14px;
+  border-color: #dce5f0;
+}
+.exam-date-card h3 {
+  font-size: 16px;
+}
+.exam-date-card header input {
+  font-size: 13px;
+  min-height: 30px;
+}
+.exam-date-card header button {
+  font-size: 13px;
+  min-height: 32px;
+}
+.schedule-grid th {
+  font-size: 14px;
+  background: #edf4ff;
+}
+.schedule-grid .subject-cell {
+  min-height: 62px;
+  padding: 6px;
+  font-size: 15px;
+}
+.subject-chip {
+  border-radius: 7px;
+  background: #edf4ff;
+  padding: 5px 7px;
+}
+.subject-chip b {
+  font-size: 14px;
+  color: #2865a9;
+}
+.subject-chip small {
+  font-size: 12px;
+}
+.original-teacher-table th,
+.original-teacher-table td {
+  padding: 8px;
+  font-size: 14px;
+}
+.original-teacher-table input,
+.original-teacher-table select {
+  min-height: 36px;
+  font-size: 14px;
+}
+.original-teacher-table .chip-field {
+  min-height: 36px;
+  padding: 4px 6px;
+}
+.original-teacher-table .data-chip {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 7px;
+}
+.original-teacher-table .data-chip.subject {
+  background: #eaf2ff;
+  color: #2463aa;
+}
+.original-teacher-table .data-chip.homeroom {
+  background: #e8f6ed;
+  color: #32734c;
+}
+.original-teacher-table .data-chip.moving {
+  background: #f1eafa;
+  color: #7953a4;
+}
+.original-settings > div {
+  padding: 18px;
+  border-radius: 12px;
+  background: #f7f9fc;
+  border: 1px solid #e2e8f1;
+}
+.original-settings h3,
+.mode-card h3 {
+  font-size: 17px;
+}
+.original-settings label {
+  font-size: 15px;
+  min-height: 45px;
+}
+.original-settings input {
+  font-size: 16px;
+  min-height: 38px;
+}
+.mode-card {
+  padding: 18px;
+  border-radius: 12px;
+  background: #edf5ff;
+}
+.mode-card p,
+.settings-note,
+.advanced-settings p {
+  font-size: 14px;
+}
+.advanced-settings summary {
+  font-size: 15px;
+}
+.step-footer {
+  padding: 14px 0;
+}
+.step-footer span {
+  font-size: 13px;
+}
+.step-footer .primary {
+  min-height: 40px;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 9px;
+}
+.workflow-modal-head h2 {
+  font-size: 21px;
+}
+.workflow-modal-body,
+.workflow-modal-footer,
+.workflow-modal-head p {
+  font-size: 15px;
+}
+.workflow-modal {
+  max-height: 90vh;
+}
+.workflow-modal-body {
+  overflow: auto;
+}
+.import-source,
+.import-mapping,
+.import-preview {
+  margin-bottom: 22px;
+}
+.import-source {
+  background: #edf5ff;
+  border: 1px solid #d0e4ff;
+  padding: 18px;
+  border-radius: 12px;
+}
+.import-source h3,
+.import-mapping h3,
+.import-preview h3 {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+.import-source p,
+.import-preview p,
+.paste-import p {
+  font-size: 14px;
+  line-height: 1.7;
+  margin-top: 10px;
+  color: #58677b;
+}
+.paste-import {
+  margin: 18px 0;
+}
+.paste-import summary {
+  font-size: 15px;
+  cursor: pointer;
+  color: #0067d9;
+}
+.paste-import textarea {
+  margin: 10px 0;
+}
+.import-options,
+.column-mapping {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+.import-options label,
+.column-mapping label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+}
+.import-preview .workflow-table-scroll {
+  max-height: 300px;
+}
+.import-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.import-preview th,
+.import-preview td {
+  padding: 10px;
+  border-bottom: 1px solid #e4e8ef;
+  text-align: left;
+}
+.import-preview th {
+  background: #edf4ff;
+  position: sticky;
+  top: 0;
+}
+.import-count {
+  margin-right: auto;
+  font-size: 14px;
+}
+/* Keep the full timetable useful while restoring readable text and color. */
+.proctor-matrix th,
+.proctor-matrix td {
+  height: 34px;
+  font-size: 14px;
+  min-width: 72px;
+}
+.proctor-matrix .teacher-slot,
+.proctor-matrix .room-slot {
+  height: 33px;
+  min-height: 33px;
+  font-size: 14px;
+}
+.proctor-matrix .teacher-slot > span {
+  font-size: 14px;
+}
+.proctor-matrix .sticky-name {
+  font-size: 14px;
+}
+.proctor-matrix .unavailable-reason {
+  font-size: 12px !important;
+}
+.proctor-matrix thead th.day-color-0 {
+  background: #eaf2ff !important;
+}
+.proctor-matrix thead th.day-color-1 {
+  background: #edf7f1 !important;
+}
+.proctor-matrix thead th.day-color-2 {
+  background: #f5effb !important;
+}
+.proctor-matrix thead tr:nth-child(2) th.day-color-0 {
+  background: #f3f7ff !important;
+}
+.proctor-matrix thead tr:nth-child(2) th.day-color-1 {
+  background: #f4faf6 !important;
+}
+.proctor-matrix thead tr:nth-child(2) th.day-color-2 {
+  background: #faf6fe !important;
+}
+.assignment-workflow .workflow-tabs button,
+.assignment-controls button {
+  font-size: 13px;
+}
+.assignment-workflow .workflow-filter select {
+  min-height: 30px;
+}
+.assignment-workflow .workflow-search,
+.assignment-workflow .workflow-search input {
+  min-height: 30px;
+}
+.assignment-summary,
+.assignment-workflow .selection-guide {
+  font-size: 13px;
+}
+.apply-button {
+  background: #007aff !important;
+  border-color: #007aff !important;
+}
+.time-matrix td select,
+.time-matrix td input {
+  font-size: 14px;
+  min-height: 33px;
+}
+.time-matrix td button {
+  font-size: 12px;
+}
+.inline-help {
+  font-size: 14px;
+}
+@media (max-width: 1100px) {
+  .app {
+    --sidebar: 205px;
+  }
+  .sidebar nav .nav-group > button {
+    font-size: 14px;
+  }
+  .section-tabs button small {
+    font-size: 12px;
+  }
+  .column-mapping {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.workflow-modal > header h2 {
+  font-size: 21px;
+}
+.workflow-modal > header p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.workflow-modal > footer {
+  font-size: 15px;
+}
+.workflow-modal .picker-grid button {
+  font-size: 15px;
+  min-height: 42px;
+}
+.workflow-modal .picker-grid button.selected {
+  background: #eaf3ff;
+  color: #0067d9;
+  border-color: #8fc0ff;
+}
+.import-source.loaded {display:flex; align-items:center; gap:16px; padding:12px 16px;}
+.import-source.loaded h3 {margin:0; font-size:15px;}
+.import-source.loaded p {display:none;}

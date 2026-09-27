@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<title> 감독 수동 배정 (정/부) </title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Inter', 'Noto Sans KR', sans-serif;
+    --primary-color: #007bff;
+    --primary-color-dark: #0069d9;
+    --secondary-color: #6c757d;
+    --secondary-color-dark: #5a6268;
+    --text-color-base: #333;
+    --text-color-light: #6c757d;
+    --border-color-light: #dee2e6;
+    --border-color-medium: #adb5bd;
+    --bg-color-light-gray: #f1f3f5;
+    --header-dark-bg: #374151;
+    --header-dark-text: #FFFFFF;
+
+    --color-date-1-bg: #EAF1F7; --color-date-1-text: #1A3353;
+    --color-date-2-bg: #F7EAEA; --color-date-2-text: #B30000;
+    --color-date-3-bg: #EAF4E6; --color-date-3-text: #2B8000;
+
+    --color-highlight-row: #ffffD0;
+    --color-highlight-selected: #cce5ff;
+    --color-highlight-target: #d4edda;
+    --color-highlight-conflict: #f8d7da;
+    --color-hover-bg: #e7f5ff;
+    --color-disabled-bg: #cccccc;
+
+    --color-unassigned-bg: #FFF5F5;
+    --color-unassigned-text: #E02424;
+
+    --color-noexam-bg: #f8f9fa;
+    --color-noexam-text: #adb5bd;
+    --color-selfstudy-bg: #f1f3f5;
+    --color-selfstudy-text: #6c757d;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: var(--font-family-base); margin: 10px; background-color: #fff;
+    color: var(--text-color-base); overflow: hidden;
+  }
+  .app-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color-medium);
+  }
+  h1.guide-message { font-size: 16px; line-height: 1.6; font-weight: normal; color: #1C1C1C; margin: 0; }
+  .guide-message .highlight-text { font-weight: 700; color: var(--primary-color-dark); }
+  .button-group { display: flex; gap: 8px; flex-shrink: 0; }
+
+  button {
+    background-color: var(--primary-color); color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+    font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.2s ease-in-out;
+  }
+  button:hover { background-color: var(--primary-color-dark); transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+  button:disabled { background-color: var(--color-disabled-bg); cursor: not-allowed; transform: none; box-shadow: none; }
+  button.secondary { background-color: var(--secondary-color); }
+  button.secondary:hover { background-color: var(--secondary-color-dark); }
+
+  .tab-group { display: flex; gap: 5px; margin-bottom: 10px; }
+  .tab-btn {
+    background-color: white; color: var(--secondary-color); border: 1px solid var(--border-color-medium);
+    padding: 8px 20px; font-size: 16px; font-weight: 700; cursor: pointer;
+    border-radius: 5px 5px 0 0; transition: all 0.2s;
+  }
+  .tab-btn:hover { background-color: var(--bg-color-light-gray); color: var(--text-color-base); transform: none; }
+  .tab-btn.active { background-color: var(--header-dark-bg); color: white; border-color: var(--header-dark-bg); }
+
+  .message-box { margin-bottom: 10px; padding: 10px; border-radius: 5px; font-weight: 600; text-align: center; font-size: 16px; display:none; }
+  .message-box.error { background-color: var(--color-error-bg); color: var(--color-error-text); }
+  .message-box.success { background-color: var(--color-success-bg); color: var(--color-success-text); }
+  .message-box.info { background-color: var(--color-info-bg); color: var(--color-info-text); }
+
+  .assignment-table-container {
+    max-height: calc(100vh - 180px); overflow: auto;
+    border: 1px solid var(--border-color-light); border-radius: 6px; display: none; position: relative;
+  }
+  .assignment-table-container.active { display: block; }
+
+  table { width: 100%; border-collapse: collapse; background-color: #fff; table-layout: fixed; border-spacing: 0; }
+  thead { position: sticky; top: 0; z-index: 100; }
+
+  th {
+    position: sticky; top: 0; font-weight: 700; padding: 8px 5px; white-space: nowrap;
+    border-bottom: 1px solid var(--border-color-light); border-right: 1px solid var(--border-color-light);
+    vertical-align: middle; background-clip: padding-box; z-index: 100;
+  }
+
+  .main-header-row > th:not(.date-block-header), .sub-header-row > th:not(.period-header) {
+    background-color: var(--header-dark-bg) !important; color: var(--header-dark-text) !important; font-size: 15px;
+  }
+
+  .date-block-header.color-1, .period-header.color-1 { background-color: var(--color-date-1-bg); color: var(--color-date-1-text); }
+  .date-block-header.color-2, .period-header.color-2 { background-color: var(--color-date-2-bg); color: var(--color-date-2-text); }
+  .date-block-header.color-3, .period-header.color-3 { background-color: var(--color-date-3-bg); color: var(--color-date-3-text); }
+
+  /* 고정 열 스타일 */
+  .seq-col, .teacher-name-col, .score-col, .room-name-col {
+    position: sticky; left: 0; z-index: 10; background-color: #fff !important;
+  }
+  .seq-col { left: 0; width: 35px; min-width: 35px; }
+  .teacher-name-col { left: 35px; width: 110px; min-width: 110px; font-size: 15px; }
+  .score-col { left: 145px; width: 50px; min-width: 50px; }
+  .room-name-col { left: 0; width: 120px; min-width: 120px; font-size: 15px; font-weight: bold; border-right: 2px solid var(--border-color-medium); }
+
+  thead .seq-col, thead .teacher-name-col, thead .score-col, thead .room-name-col {
+    z-index: 110 !important; background-color: var(--header-dark-bg) !important;
+  }
+  thead .score-col { left: 145px; }
+  .date-divider { border-right: 3px double var(--border-color-medium) !important; }
+
+  /* 셀 스타일 */
+  td {
+    border: 1px solid var(--border-color-light); padding: 5px 2px; text-align: center; vertical-align: middle;
+    font-size: 13px; letter-spacing: -0.5px; white-space: nowrap; cursor: pointer; user-select: none;
+    overflow: hidden; text-overflow: ellipsis; min-width: 60px; max-width: 70px;
+  }
+  #assignment-table td { min-width: 80px; max-width: none; font-size: 15px; letter-spacing: normal; padding: 5px 7px; }
+
+  td.seq-col { font-size: 14px; font-weight: 700; }
+  td:hover { background-color: var(--color-hover-bg); }
+
+  .unavailable-slot { background-color: var(--bg-color-light-gray) !important; color: var(--text-color-light) !important; cursor: not-allowed; font-size: 12px; }
+  .unassigned-slot { background-color: var(--color-unassigned-bg) !important; color: var(--color-unassigned-text) !important; font-weight: bold; border: 1px dashed var(--color-unassigned-text) !important; }
+  .self-study-slot { background-color: var(--color-selfstudy-bg) !important; color: var(--color-selfstudy-text) !important; cursor: default; }
+  .no-exam-slot { background-color: var(--color-noexam-bg) !important; color: var(--color-noexam-text) !important; cursor: default; font-size: 11px !important; }
+
+  tr.selected-row > td { background-color: var(--color-highlight-row) !important; }
+  tr.selected-row > td.selected-swap { background-color: var(--color-highlight-selected) !important; border: 2px solid var(--primary-color); font-weight: 700; }
+  tr.selected-row > td.highlight-target { background-color: var(--color-highlight-target) !important; border: 2px solid #28a745; font-weight: 700; }
+  tr.selected-row > td.conflict { background-color: var(--color-highlight-conflict) !important; border: 2px solid #dc3545; font-weight: 700; }
+
+  /* 로딩 오버레이 */
+  .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); display: none; justify-content: center; align-items: center;
+    z-index: 2000; flex-direction: column; gap: 8px; }
+  .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: var(--primary-color); border-radius: 50%; width: 35px; height: 35px; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 18px; font-weight: bold; color: var(--primary-color); }
+  .previous-score { color: var(--primary-color-dark); font-size: 12px; font-weight: 700; margin-left: 2px; }
+
+  /* ==========================================================
+     ✅ Apple 시스템 스타일 커스텀 모달 (SweetAlert2 대체)
+     ========================================================== */
+  #apple-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); 
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      display: none; align-items: center; justify-content: center; z-index: 30000;
+  }
+  .apple-alert {
+      background: rgba(255, 255, 255, 0.85); width: 320px; border-radius: 14px;
+      overflow: hidden; display: flex; flex-direction: column; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+  }
+  @keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .apple-alert-content { padding: 20px 16px; text-align: center; }
+  .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 8px; letter-spacing: -0.4px; color: #000; }
+  .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; text-align: center; }
+  /* 1. 버튼 컨테이너: 높이를 고정하고 내부 버튼들이 정확히 반씩 차지하도록 설정 */
+.apple-alert-buttons { 
+    display: flex; 
+    border-top: 0.5px solid rgba(60, 60, 67, 0.2); 
+    height: 44px; /* 버튼 영역 높이 고정 */
+    align-items: stretch;
+}
+
+/* 2. 공통 버튼 스타일: 배경을 투명하게 하고 텍스트를 수직/수평 중앙 정렬 */
+.apple-btn { 
+    flex: 1; 
+    display: flex; /* flex로 변경하여 정중앙 정렬 보장 */
+    align-items: center; 
+    justify-content: center;
+    padding: 0; /* padding 제거하여 텍스트 위치 고정 */
+    font-size: 17px; 
+    background: transparent; /* 배경은 항상 투명하게 */
+    border: none;
+    color: #007AFF; 
+    cursor: pointer; 
+    outline: none;
+    margin: 0;
+}
+
+/* 3. 호버/클릭 시 효과: 전체를 가리는 진한 색 대신 아주 연한 회색으로 변경 */
+.apple-btn:active, .apple-btn:hover { 
+    background-color: rgba(0, 0, 0, 0.05) !important; /* 가독성을 위해 아주 연한 회색 적용 */
+}
+
+/* 4. 확인 버튼(오른쪽) 경계선 설정 */
+.apple-btn-border { 
+    border-left: 0.5px solid rgba(60, 60, 67, 0.2) !important; 
+}
+
+/* 5. 취소 버튼 컬러 (선택 사항: 애플 스타일은 보통 둘 다 블루이나 구분이 필요할 때) */
+.apple-btn-cancel {
+    color: #007AFF; /* 확인 버튼과 동일한 블루 톤 유지 */
+    font-weight: 400;
+}
+  /* 애플 스타일 팝업용 라디오 리스트 */
+  .apple-radio-list { text-align: center; max-height: 250px; overflow-y: auto; margin-top: 15px; border-top: 1px solid #e5e5ea; }
+  .apple-radio-list label { display: block; padding: 12px 8px; border-bottom: 1px solid #e5e5ea; cursor: pointer; font-size: 15px; color: #000; transition: background 0.2s; }
+  .apple-radio-list label:hover { background: rgba(0,0,0,0.03); }
+  .apple-radio-list input[type="radio"] { margin-right: 10px; accent-color: #007AFF; transform: scale(1.2); }
+</style>
+</head>
+<body>
+
+<div id="apple-modal-overlay">
+    <div class="apple-alert">
+        <div class="apple-alert-content">
+            <div id="apple-title" class="apple-alert-title"></div>
+            <div id="apple-text" class="apple-alert-text"></div>
+        </div>
+        <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+    </div>
+</div>
+
+<div class="app-header">
+  <div>
+    <div class="tab-group">
+      <button class="tab-btn active" onclick="switchTab('teacher-view')">👨‍🏫 교사별 보기 (맞교환)</button>
+      <button class="tab-btn" onclick="switchTab('room-view')">🏫 고사실별 보기 (미배정 확인)</button>
+    </div>
+
+    <h1 id="guide-msg" class="guide-message">
+      교환할  <span class="highlight-text"> 정/부 감독 </span>  칸을 선택 후  <span class="highlight-text"> 감독 교환 </span>  버튼을 눌러주세요.
+      <br>
+      교환 후 ' <span class="highlight-text"> 변경사항 반영 </span> '을 누르면 실제 구글 시트에 확정됩니다.
+    </h1>
+  </div>
+
+  <div class="button-group">
+    <button id="load-previous-score-button" class="secondary" onclick="loadPreviousScores()"> 이전 점수 </button>
+    <button id="execute-swap-button" disabled> 감독 교환 </button>
+    <button id="clear-selection-button" disabled> 선택 해제 </button>
+    <button id="save-changes-button" disabled style="background-color: #28a745;"> 변경사항 반영 </button>
+  </div>
+</div>
+
+<div class="message-box" id="message-box" style="display:none;"></div>
+<div class="loading-overlay" id="loading-overlay"><div class="spinner"></div><div class="loading-text"> 데이터를 불러오는 중... </div></div>
+
+<div id="teacher-view" class="assignment-table-container active">
+  <table id="assignment-table">
+    <thead><tr class="main-header-row"></tr><tr class="sub-header-row"></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="room-view" class="assignment-table-container">
+  <table id="room-table">
+    <thead><tr class="main-header-row"></tr><tr class="sub-header-row"></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+let allProctoringSlots = [];
+let allTeachers = [];
+let examDates = [];
+let periodCount = 0;
+let scheduleData = null;
+let unavailabilityInfo = {};
+let selectedSlots = [];
+let allRoomsSorted = [];
+let hallwayList = [];  
+
+const assignmentTable = document.getElementById('assignment-table');
+const roomTable = document.getElementById('room-table');
+const swapButton = document.getElementById('execute-swap-button');
+const clearSelectionButton = document.getElementById('clear-selection-button');
+const saveChangesButton = document.getElementById('save-changes-button');
+const messageBox = document.getElementById('message-box');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingText = document.querySelector('.loading-text');
+
+// ✅ 애플 스타일 모달 제어 함수
+function appleAlert(title, htmlContent, onConfirm = null, showCancel = true) {
+    document.getElementById('apple-title').textContent = title;
+    document.getElementById('apple-text').innerHTML = htmlContent;
+    const btnContainer = document.getElementById('apple-buttons-container');
+    btnContainer.innerHTML = '';
+   
+    if (showCancel) {
+        btnContainer.innerHTML = `
+            <button id="apple-btn-cancel" class="apple-btn">취소</button>
+            <button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">확인</button>
+        `;
+        document.getElementById('apple-btn-cancel').onclick = () => { document.getElementById('apple-modal-overlay').style.display = 'none'; };
+    } else {
+        btnContainer.innerHTML = `<button id="apple-btn-confirm" class="apple-btn apple-btn-bold w-full">확인</button>`;
+    }
+   
+    document.getElementById('apple-btn-confirm').onclick = () => {
+        document.getElementById('apple-modal-overlay').style.display = 'none';
+        if(onConfirm) onConfirm();
+    };
+    document.getElementById('apple-modal-overlay').style.display = 'flex';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  showLoading('정/부 감독 정보를 불러오는 중입니다...');
+  google.script.run
+    .withSuccessHandler(handleInitialDataSuccess)
+    .withFailureHandler(handleInitialDataFailure)
+    .getInitialMainSubSwapData();
+});
+
+swapButton.addEventListener('click', initiateSwap);
+clearSelectionButton.addEventListener('click', clearSelection);
+saveChangesButton.addEventListener('click', saveManualChanges);
+
+function switchTab(viewId) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.assignment-table-container').forEach(view => view.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+
+  const guide = document.getElementById('guide-msg');
+  if (viewId === 'teacher-view') {
+    guide.innerHTML = `교환할 <span class="highlight-text">정/부 감독</span> 칸을 선택 후 <span class="highlight-text">감독 교환</span> 버튼을 눌러주세요.<br>교환 후 '<span class="highlight-text">변경사항 반영</span>'을 누르면 실제 구글 시트에 확정됩니다.`;
+    swapButton.style.display = 'flex';
+  } else {
+    guide.innerHTML = `<span style="color:#E02424; font-weight:bold;">미배정(빨강)</span> 칸은 감독관을 추가하고,<br>이미 배정된 칸은 클릭해 <span class="highlight-text">다른 교사로 배정(양도)</span>할 수 있습니다.`;
+  }
+  clearSelection();
+}
+
+function showLoading(msg) { loadingText.textContent = msg; loadingOverlay.style.display = 'flex'; }
+function hideLoading() { loadingOverlay.style.display = 'none'; }
+function showMessage(msg, type) {
+  messageBox.textContent = msg; messageBox.className = `message-box ${type}`;
+  messageBox.style.display = 'block'; setTimeout(() => { messageBox.style.display = 'none'; }, 4000);
+}
+
+function handleInitialDataSuccess(data) {
+  allTeachers = data.teachers;
+  examDates = data.examDates;
+  periodCount = data.periodCount;
+  unavailabilityInfo = data.unavailabilityInfo || {};
+  scheduleData = data.scheduleData || null;
+  hallwayList = data.hallwayList || [];  
+  allRoomsSorted = data.allRooms;
+
+  allProctoringSlots = [];
+  const rawSlots = data.proctoringSlots;
+
+  if (Array.isArray(rawSlots)) {
+    allProctoringSlots = rawSlots;
+  } else {
+    for (const room in rawSlots) {
+      for (const date in rawSlots[room]) {
+        for (const p in rawSlots[room][date]) {
+          const slotInfo = rawSlots[room][date][p];
+          allProctoringSlots.push({ date: date, period: parseInt(p), room: room, isMain: true, assignedTeacher: slotInfo.main, isHallway: false });
+          allProctoringSlots.push({ date: date, period: parseInt(p), room: room, isMain: false, assignedTeacher: slotInfo.sub, isHallway: false });
+        }
+      }
+    }
+  }
+  hideLoading();
+  renderTable();
+  renderRoomTable();
+}
+
+function handleInitialDataFailure(error) {
+  hideLoading();
+  appleAlert('오류 발생', "데이터 로드 중 오류가 발생했습니다.<br>" + error.message, null, false);
+}
+
+function renderTable() {
+  const mainHeaderRow = assignmentTable.querySelector('.main-header-row');
+  const subHeaderRow = assignmentTable.querySelector('.sub-header-row');
+  const tbody = assignmentTable.querySelector('tbody');
+  mainHeaderRow.innerHTML = ''; subHeaderRow.innerHTML = ''; tbody.innerHTML = '';
+
+  mainHeaderRow.innerHTML = `<th rowspan="2" class="seq-col">순</th><th rowspan="2" class="teacher-name-col">교사명</th><th rowspan="2" class="score-col date-divider" style="white-space:normal;line-height:1.2;">배정<br>점수</th>`;
+  examDates.forEach((date, index) => {
+    mainHeaderRow.innerHTML += `<th colspan="${periodCount}" class="date-block-header color-${(index % 3) + 1} ${index < examDates.length - 1 ? 'date-divider' : ''}">${new Date(date).toLocaleDateString('ko-KR',{month:'short',day:'numeric',weekday:'short'})}</th>`;
+    for (let p = 1; p <= periodCount; p++) {
+      subHeaderRow.innerHTML += `<th class="period-header color-${(index % 3) + 1} ${p === periodCount && index < examDates.length - 1 ? 'date-divider' : ''}">${p} 교시</th>`;
+    }
+  });
+
+  allTeachers.forEach((teacher, index) => {
+    const tr = document.createElement('tr');
+    let teacherNameHTML = teacher.name;
+    if (teacher.previousScore !== undefined) { teacherNameHTML += `<span class="previous-score">(${teacher.previousScore})</span>`; }
+
+    tr.innerHTML = `<td class="seq-col">${index + 1}</td><td class="teacher-name-col">${teacherNameHTML}</td><td class="score-col date-divider">${teacher.score !== undefined ? teacher.score : (teacher.totalProctorScore || 0)}</td>`;
+
+    examDates.forEach((date, dateIndex) => {
+      for (let p = 1; p <= periodCount; p++) {
+        const td = document.createElement('td');
+        const key = `${teacher.name}-${date}-${p}`;
+        const unavailableReason = unavailabilityInfo[key];
+
+        if (unavailableReason) {
+          td.textContent = unavailableReason; td.classList.add('unavailable-slot');
+        } else {
+          const assignment = allProctoringSlots.find(s => s.date === date && s.period === p && s.assignedTeacher === teacher.name);
+          if (assignment) {
+            const roleSuffix = assignment.isMain ? '(정)' : '(부)';
+            td.textContent = (assignment.room || '') + roleSuffix;
+            td.dataset.assignedRoom = assignment.room;
+            td.dataset.isMain = assignment.isMain;
+            td.addEventListener('click', handleSlotClick);
+          } else {
+            td.textContent = ''; td.classList.add('empty-slot');
+          }
+        }
+
+        td.dataset.teacherName = teacher.name; td.dataset.date = date; td.dataset.period = p;
+        if (p === periodCount && dateIndex < examDates.length - 1) { td.classList.add('date-divider'); }
+        tr.appendChild(td);
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderRoomTable() {
+  const mainHeaderRow = roomTable.querySelector('.main-header-row');
+  const subHeaderRow = roomTable.querySelector('.sub-header-row');
+  const tbody = roomTable.querySelector('tbody');
+
+  mainHeaderRow.innerHTML = ''; subHeaderRow.innerHTML = ''; tbody.innerHTML = '';
+
+  mainHeaderRow.innerHTML = `<th rowspan="2" class="room-name-col">고사실</th>`;
+  examDates.forEach((date, index) => {
+    mainHeaderRow.innerHTML += `<th colspan="${periodCount * 2}" class="date-block-header color-${(index % 3) + 1} ${index < examDates.length - 1 ? 'date-divider' : ''}">${new Date(date).toLocaleDateString('ko-KR',{month:'short',day:'numeric',weekday:'short'})}</th>`;
+    for (let p = 1; p <= periodCount; p++) {
+      subHeaderRow.innerHTML += `<th class="period-header color-${(index % 3) + 1} ">정</th>`;
+      subHeaderRow.innerHTML += `<th class="period-header color-${(index % 3) + 1} ${p === periodCount && index < examDates.length - 1 ? 'date-divider' : ''} ">부</th>`;
+    }
+  });
+
+  allRoomsSorted.forEach(room => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="room-name-col">${room}</td>`;
+
+    examDates.forEach((date, dateIndex) => {
+      for (let p = 1; p <= periodCount; p++) {
+        // ✅ 수정된 변수 선언: 기존 slotsInCell 필터링 로직 제거
+        const mainSlot = allProctoringSlots.find(s => s.room === room && s.date === date && s.period === p && s.isMain);
+        const subSlot = allProctoringSlots.find(s => s.room === room && s.date === date && s.period === p && !s.isMain);
+
+        const tdMain = document.createElement('td');
+        tdMain.dataset.date = date; tdMain.dataset.period = p; tdMain.dataset.room = room; tdMain.dataset.isMain = "true";
+
+        // ✅ 정감독 자리 처리
+        if (mainSlot) {
+          if (mainSlot.assignedTeacher) {
+            tdMain.textContent = mainSlot.assignedTeacher;
+            tdMain.dataset.teacherName = mainSlot.assignedTeacher;
+            tdMain.dataset.assignedRoom = room;
+            tdMain.style.cursor = 'pointer';
+            tdMain.onclick = () => handleRoomAssignClick(date, p, room, true);
+          } else {
+            tdMain.textContent = "미배정";
+            tdMain.classList.add('unassigned-slot');
+            tdMain.onclick = () => handleUnassignedClick(date, p, room, true);
+          }
+        } else {
+          tdMain.textContent = "시험없음";
+          tdMain.classList.add('no-exam-slot');
+        }
+        tr.appendChild(tdMain);
+
+        const tdSub = document.createElement('td');
+        tdSub.dataset.date = date; tdSub.dataset.period = p; tdSub.dataset.room = room; tdSub.dataset.isMain = "false";
+
+        // ✅ 부감독 자리 처리
+        if (subSlot) {
+          if (subSlot.assignedTeacher) {
+            tdSub.textContent = subSlot.assignedTeacher;
+            tdSub.dataset.teacherName = subSlot.assignedTeacher;
+            tdSub.dataset.assignedRoom = room;
+            tdSub.style.cursor = 'pointer';
+            tdSub.onclick = () => handleRoomAssignClick(date, p, room, false);
+          } else {
+            tdSub.textContent = "미배정";
+            tdSub.classList.add('unassigned-slot');
+            tdSub.onclick = () => handleUnassignedClick(date, p, room, false);
+          }
+        } else {
+          if (!mainSlot) {
+            tdSub.textContent = "시험없음";
+            tdSub.classList.add('no-exam-slot');
+          } else {
+            tdSub.textContent = "자습";
+            tdSub.classList.add('self-study-slot');
+          }
+        }
+
+        if (p === periodCount && dateIndex < examDates.length - 1) { tdSub.classList.add('date-divider'); }
+        tr.appendChild(tdSub);
+      }
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function getClientCellStatus(date, period, room) {
+  if(!scheduleData || !scheduleData.subjects || !scheduleData.subjects[date]) return 'EMPTY';
+  const subjectsInPeriod = scheduleData.subjects[date][`period${period}`];
+  if(!subjectsInPeriod) return 'NO_EXAM';
+  const hasExam = [1,2,3].some(g => subjectsInPeriod[`grade${g}`] && subjectsInPeriod[`grade${g}`].trim() !== '');
+  if(!hasExam) return 'NO_EXAM';
+  const selfStudyKeywords = /자습|자율|자기주도|창체|동아리|봉사|진로|행사|안전/i;
+  let allSelfStudy = true;
+  let hasSubject = false;
+  for(let g=1; g<=3; g++) {
+    const sub = subjectsInPeriod[`grade${g}`];
+    if(sub && sub.trim() !== '') {
+      hasSubject = true;
+      if(!selfStudyKeywords.test(sub.replace(/\s+/g, ''))) { allSelfStudy = false; break; }
+    }
+  }
+  if (!hasSubject) return 'NO_EXAM';
+  if(allSelfStudy) return 'SELF_STUDY';
+  return 'EMPTY';
+}
+
+// ✅ [신규] 고사실별 보기: 이미 배정된 정/부 칸 클릭 → 다른 교사로 배정(양도)
+function handleRoomAssignClick(date, period, room, isMain) {
+  const slot = allProctoringSlots.find(s => s.room === room && s.date === date && s.period === period && s.isMain === isMain);
+  const currentTeacher = slot ? slot.assignedTeacher : null;
+  const isHallwayRoom = (hallwayList && hallwayList.includes(room)) || !String(room).match(/^\d+-\d+$/);
+  const roleText = isMain ? '정감독' : '부감독';
+
+  const candidates = allTeachers.filter(t => {
+    if (currentTeacher && t.name === currentTeacher) return false;                   // 현재 배정자 제외
+    const reason = unavailabilityInfo[`${t.name}-${date}-${period}`];
+    // 규칙1: 동일 날짜·교시 중복배정 차단 (room/isMain 무관 — 같은 사람이 정/부 동시 배정되는 것도 여기서 막힘)
+    const isBusy = allProctoringSlots.some(s => s.assignedTeacher === t.name && s.date === date && s.period === period);
+    if (isBusy) return false;
+    if (reason && reason.trim() !== '') return false;                                // 규칙2: 가능날짜/제외/교과 등
+    if (t.isHallwayOnly && !isHallwayRoom && isMain) return false;                   // 복도전담은 정감독 불가
+    if (t.homeroom && String(t.homeroom) === String(room)) return false;
+    if (t.movingClasses && t.movingClasses.includes(String(room))) return false;
+    return true;
+  });
+  candidates.sort((a, b) => {
+    const sa = a.score !== undefined ? a.score : (a.totalProctorScore || 0);
+    const sb = b.score !== undefined ? b.score : (b.totalProctorScore || 0);
+    return sa - sb;
+  });
+
+  if (candidates.length === 0) {
+    appleAlert('배정 불가', '이 자리에 배정할 수 있는 교사가 없습니다.', null, false);
+    return;
+  }
+
+  let html = '';
+  if (currentTeacher) html += `<div style="margin-bottom:10px; font-size:0.9em; color:#555;">현재 ${roleText}: <b>${currentTeacher}</b></div>`;
+  html += '<div class="apple-radio-list">';
+  candidates.forEach(t => {
+    const sc = t.score !== undefined ? t.score : (t.totalProctorScore || 0);
+    const badge = t.isHallwayOnly ? ' <span style="font-size:0.8em; color:#007AFF;">(복도전담)</span>' : '';
+    html += `<label><input type="radio" name="newTeacher" value="${t.name}"> ${t.name} [${sc}점]${badge}</label>`;
+  });
+  html += '</div>';
+
+  appleAlert(`${room} ${roleText} 배정`, html, () => {
+    const selected = document.querySelector('input[name="newTeacher"]:checked');
+    if (!selected) return;
+    const teacherName = selected.value;
+    let s = allProctoringSlots.find(x => x.room === room && x.date === date && x.period === period && x.isMain === isMain);
+    if (s) {
+      s.assignedTeacher = teacherName;
+    } else {
+      allProctoringSlots.push({ date, period, room, assignedTeacher: teacherName, isMain, isHallway: isHallwayRoom });
+    }
+    // 점수 전체 재계산 (배정 건수 기준 = 서버 로직과 동일)
+    allTeachers.forEach(t => {
+      const cnt = allProctoringSlots.filter(x => x.assignedTeacher === t.name).length;
+      if (t.score !== undefined) t.score = cnt; else t.totalProctorScore = cnt;
+    });
+    renderTable(); renderRoomTable();
+    saveChangesButton.disabled = false;
+    showMessage(`${currentTeacher ? currentTeacher + ' → ' : ''}${teacherName} (으)로 ${roleText} 임시 배정되었습니다. [변경사항 반영]을 눌러주세요.`, 'success');
+  });
+}
+
+function applySelectionHighlight() {
+  // 1. 기존의 타겟, 충돌 클래스까지 모두 지워줍니다.
+  document.querySelectorAll('td').forEach(td => td.classList.remove('selected-swap', 'highlight-target', 'conflict'));
+  selectedSlots.forEach(s => s.tdElement.classList.add('selected-swap'));
+
+  // 2. 두 칸이 선택되었을 때 즉시 검증 로직을 실행하여 색상을 입힙니다.
+  if (selectedSlots.length === 2) {
+    const [slot1, slot2] = selectedSlots;
+    const validationResult = validateSwap(slot1, slot2);
+
+    if (validationResult.canSwap) {
+      slot1.tdElement.classList.add('highlight-target');
+      slot2.tdElement.classList.add('highlight-target');
+      showMessage('두 감독의 교환이 가능합니다. [감독 교환]을 누르세요.', 'info');
+    } else {
+      slot1.tdElement.classList.add('conflict');
+      slot2.tdElement.classList.add('conflict');
+      showMessage(`교환 불가: ${validationResult.conflictMessages.join('; ')}`, 'error');
+    }
+  }
+}
+
+function handleSlotClick(event) {
+  const clickedTd = event.target.closest('td');
+  if (!clickedTd || clickedTd.classList.contains('unavailable-slot') || clickedTd.classList.contains('no-exam-slot') || clickedTd.classList.contains('self-study-slot') || clickedTd.classList.contains('seq-col') || clickedTd.classList.contains('score-col') || clickedTd.classList.contains('room-name-col') || clickedTd.classList.contains('teacher-name-col')) return;
+  if (clickedTd.classList.contains('unassigned-slot')) return;
+
+  const slotInfo = {
+    teacherName: clickedTd.dataset.teacherName,
+    date: clickedTd.dataset.date,
+    period: parseInt(clickedTd.dataset.period),
+    assignedRoom: clickedTd.dataset.assignedRoom,
+    isMain: clickedTd.dataset.isMain === 'true',
+    tdElement: clickedTd
+  };
+
+  if (selectedSlots.some(s => s.tdElement === clickedTd)) { clearSelection(); return; }
+  if (selectedSlots.length >= 2) clearSelection();
+
+  selectedSlots.push(slotInfo);
+  clickedTd.classList.add('selected-swap');
+  if (clickedTd.closest('tr')) clickedTd.closest('tr').classList.add('selected-row');
+
+  if (selectedSlots.length === 2) {
+    const [slot1, slot2] = selectedSlots;
+    if (slot1.date !== slot2.date || slot1.period !== slot2.period) {
+      showMessage('감독 교환은 동일 날짜, 동일 교시 내에서만 가능합니다.', 'error'); clearSelection(); return;
+    }
+    if (slot1.teacherName === slot2.teacherName) {
+      showMessage('같은 교사 내에서는 교환할 수 없습니다.', 'error'); clearSelection(); return;
+    }
+  }
+  applySelectionHighlight();
+  updateButtonStates();
+}
+
+// ✅ 화면에서 즉시 반영되도록 변경된 미배정 클릭 로직
+function handleUnassignedClick(date, period, room, isMain) {
+  const isHallwayRoom = (hallwayList && hallwayList.includes(room)) || !String(room).match(/^\d+-\d+$/);
+
+  const availableTeachers = allTeachers.filter(t => {
+    const key = `${t.name}-${date}-${period}`;
+    const reason = unavailabilityInfo[key];
+    const isBusy = allProctoringSlots.some(s => s.assignedTeacher === t.name && s.date === date && s.period === period);
+   
+    if (isBusy) return false;
+    if (reason && reason.trim() !== '') return false;
+    if (t.isHallwayOnly && !isHallwayRoom && isMain) return false;
+   
+    // [추가] 담임 학급 및 이동 학급 검사
+    if (t.homeroom && String(t.homeroom) === String(room)) return false;
+    if (t.movingClasses && t.movingClasses.includes(String(room))) return false;
+   
+    return true;
+  });
+
+  availableTeachers.sort((a, b) => {
+    const scoreA = a.score !== undefined ? a.score : (a.totalProctorScore || 0);
+    const scoreB = b.score !== undefined ? b.score : (b.totalProctorScore || 0);
+    return scoreA - scoreB;
+  });
+
+  if (availableTeachers.length === 0) {
+    appleAlert('배정 불가', '해당 시간에 배정 가능한 교사가 없습니다.', null, false);
+    return;
+  }
+
+  let html = '<div class="apple-radio-list">';
+  availableTeachers.forEach(t => {
+    const currentScore = t.score !== undefined ? t.score : (t.totalProctorScore || 0);
+    const badge = t.isHallwayOnly ? ' <span style="font-size:0.8em; color:#007AFF;">(복도전담)</span>' : '';
+    html += `<label><input type="radio" name="newTeacher" value="${t.name}"> ${t.name} [${currentScore}점] ${badge}</label>`;
+  });
+  html += '</div>';
+
+  const roleText = isMain ? '정감독' : '부감독';
+
+  appleAlert(`${room} ${roleText} 배정`, html, () => {
+    const selected = document.querySelector('input[name="newTeacher"]:checked');
+    if (selected) {
+      executeClientAssign(date, period, room, isMain, selected.value);
+    }
+  });
+}
+
+function executeClientAssign(date, period, room, isMain, teacherName) {
+  const t = allTeachers.find(t => t.name === teacherName);
+  if (t) {
+    const currentScore = t.score !== undefined ? t.score : (t.totalProctorScore || 0);
+    if (t.score !== undefined) t.score = currentScore + 1;
+    else t.totalProctorScore = currentScore + 1;
+  }
+
+  const existingSlotIndex = allProctoringSlots.findIndex(s => s.room === room && s.date === date && s.period === period && s.isMain === isMain);
+  const isHallwayRoom = (hallwayList && hallwayList.includes(room)) || !String(room).match(/^\d+-\d+$/);
+
+  if (existingSlotIndex !== -1) {
+    allProctoringSlots[existingSlotIndex].assignedTeacher = teacherName;
+    allProctoringSlots[existingSlotIndex].isHallway = isHallwayRoom;
+  } else {
+    allProctoringSlots.push({ date: date, period: period, room: room, assignedTeacher: teacherName, isMain: isMain, isHallway: isHallwayRoom });
+  }
+
+  renderTable();
+  renderRoomTable();
+  showMessage(`${teacherName} 선생님이 ${isMain ? '정' : '부'}감독으로 임시 배정되었습니다.`, 'success');
+  saveChangesButton.disabled = false;
+}
+
+function updateButtonStates() {
+  swapButton.disabled = !(selectedSlots.length === 2 && validateSwap(selectedSlots[0], selectedSlots[1]).canSwap);
+  clearSelectionButton.disabled = selectedSlots.length === 0;
+}
+
+function clearSelection() {
+  selectedSlots = [];
+  document.querySelectorAll('.selected-row').forEach(tr => tr.classList.remove('selected-row'));
+  applySelectionHighlight();
+  updateButtonStates();
+}
+
+function initiateSwap() {
+  if (selectedSlots.length !== 2) return;
+
+  const [slot1, slot2] = selectedSlots;
+
+  // [추가] 교환이 가능한지 검증
+  const validationResult = validateSwap(slot1, slot2);
+  if (!validationResult.canSwap) {
+    showMessage(`교환 불가: ${validationResult.conflictMessages.join('; ')}`, 'error');
+    return;
+  }
+
+  let assign1 = allProctoringSlots.find(s => s.assignedTeacher === slot1.teacherName && s.date === slot1.date && s.period === slot1.period);
+  let assign2 = allProctoringSlots.find(s => s.assignedTeacher === slot2.teacherName && s.date === slot2.date && s.period === slot2.period);
+  if (assign1 && assign2) {
+    const tempRoom = assign1.room;
+    const tempMain = assign1.isMain;
+    assign1.room = assign2.room;
+    assign1.isMain = assign2.isMain;
+    assign2.room = tempRoom;
+    assign2.isMain = tempMain;
+
+    showMessage('임시 교환 완료. 확정하려면 [변경사항 반영]을 누르세요.', 'success');
+    saveChangesButton.disabled = false;
+    clearSelection();
+    renderTable(); renderRoomTable();
+  } else {
+    showMessage('데이터 오류: 교환 대상을 찾을 수 없습니다.', 'error');
+  }
+}
+
+// ✅ 서버 통신으로 시트 확정
+function saveManualChanges() {
+  appleAlert('변경사항 반영', '지금까지 화면에서 조정한 모든 내용을<br>실제 구글 시트에 확정하시겠습니까?', () => {
+      showLoading('데이터를 저장하고 시트를 재생성하는 중...');
+      google.script.run
+        .withSuccessHandler(response => {
+          hideLoading();
+          appleAlert('성공!', '시트 재생성이 완료되었습니다.', () => { google.script.host.close(); }, false);
+        })
+        .withFailureHandler(error => {
+          hideLoading();
+          appleAlert('오류 발생', '저장 중 오류가 발생했습니다.<br>' + error.message, null, false);
+        })
+        .saveProctorManualChanges(allProctoringSlots);
+  });
+}
+
+function loadPreviousScores() {
+  showLoading('과거 고사 목록을 조회합니다...');
+  google.script.run.withSuccessHandler(showFileSelectionPopup).withFailureHandler(handleInitialDataFailure).getArchivedFileList();
+}
+
+function showFileSelectionPopup(fileList) {
+  hideLoading();
+  if (!fileList || fileList.length === 0) { appleAlert('알림', '파일이 없습니다.', null, false); return; }
+ 
+  let html = '<div class="apple-radio-list">';
+  fileList.forEach(f => html += `<label><input type="radio" name="archivedFile" value="${f.id}"> ${f.name}</label>`);
+  html += '</div>';
+ 
+  appleAlert('이전 고사 점수 선택', html, () => {
+      const fid = document.querySelector('input[name="archivedFile"]:checked')?.value;
+      if(fid) {
+        showLoading('점수 적용 중...');
+        google.script.run.withSuccessHandler(updateTeacherNamesWithScores).withFailureHandler(handleInitialDataFailure).getScoresFromArchivedFile(fid);
+      }
+  });
+}
+
+function updateTeacherNamesWithScores(scores) {
+  hideLoading();
+  allTeachers.forEach(t => { if(scores[t.name]!==undefined) t.previousScore=scores[t.name]; });
+  renderTable(); renderRoomTable();
+  appleAlert('성공', '이전 점수가 표에 임시 반영되었습니다.', null, false);
+}
+
+function validateSwap(slot1, slot2) {
+  const teacher1Profile = allTeachers.find(t => t.name === slot1.teacherName);
+  const teacher2Profile = allTeachers.find(t => t.name === slot2.teacherName);
+  let conflictMessages = [];
+
+  const validation1 = isManuallyAssignableJS(teacher1Profile, slot1.date, slot1.period, slot2.assignedRoom);
+  if (!validation1.isValid) conflictMessages.push(`'${teacher1Profile.name}': ${validation1.reason}`);
+
+  const validation2 = isManuallyAssignableJS(teacher2Profile, slot2.date, slot2.period, slot1.assignedRoom);
+  if (!validation2.isValid) conflictMessages.push(`'${teacher2Profile.name}': ${validation2.reason}`);
+
+  return { canSwap: conflictMessages.length === 0, conflictMessages: conflictMessages };
+}
+
+// ✅ 담임, 이동학급, 예외 조건 등을 확인하는 함수 추가
+function isManuallyAssignableJS(teacherProfile, targetDate, targetPeriod, targetRoom) {
+  const key = `${teacherProfile.name}-${targetDate}-${targetPeriod}`;
+ 
+  if (unavailabilityInfo[key] && targetRoom && targetRoom.trim() !== '') {
+    return { isValid: false, reason: unavailabilityInfo[key] };
+  }
+    if (!targetRoom || targetRoom.trim() === '') {
+    return { isValid: true, reason: '' };
+  }
+  if (teacherProfile.homeroom && String(teacherProfile.homeroom) === String(targetRoom)) {
+    return { isValid: false, reason: '담임 학급과 동일한 고사실입니다.' };
+  }
+  if (teacherProfile.movingClasses && Array.isArray(teacherProfile.movingClasses) && teacherProfile.movingClasses.includes(String(targetRoom))) {
+    return { isValid: false, reason: '이동 학급과 동일합니다.' };
+  }
+  return { isValid: true, reason: '' };
+}
+</script>
+</body>
+</html>

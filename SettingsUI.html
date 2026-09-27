@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Noto Sans KR font */
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; }
+
+/* Toggle switch styles */
+.toggle-switch .peer:checked ~ .toggle-track { background-color: #3b82f6; }
+.toggle-switch .peer:checked ~ .toggle-thumb { transform: translateX(1.5rem); }
+
+/* Disabled state styles */
+.disabled {
+opacity: 0.5;
+pointer-events: none;
+transition: opacity 0.3s ease-in-out;
+}
+#general-settings-wrapper {
+transition: opacity 0.3s ease-in-out;
+}
+
+/* ==========================================================
+Apple 시스템 스타일 커스텀 알림창 (이식 완료)
+========================================================== */
+#apple-modal-overlay {
+position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4);
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+display: none; align-items: center; justify-content: center; z-index: 30000;
+}
+.apple-alert {
+background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px;
+overflow: hidden; display: flex; flex-direction: column;
+box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+}
+@keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.apple-alert-content { padding: 20px 16px; text-align: center; }
+.apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+.apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+.apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); }
+.apple-btn {
+flex: 1; padding: 12px; font-size: 17px; background: transparent; border: none;
+color: #007AFF; cursor: pointer; outline: none;
+}
+.apple-btn:active { background: rgba(0, 0, 0, 0.05); }
+.apple-btn-bold { font-weight: 600; }
+.apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+</style>
+</head>
+<body class="bg-gray-100">
+
+<div class="flex items-center justify-center min-h-screen p-4 w-full">
+<div class="container bg-white rounded-3xl shadow-2xl p-8 w-full max-w-xl border border-gray-200">
+<h2 class="sr-only">감독 배정 세부 설정</h2>
+
+<div id="general-settings-wrapper" class="space-y-8">
+<div class="setting-field-group">
+<h3 class="text-xl font-bold text-gray-800 mb-2">업무 강도 설정</h3>
+<p class="text-sm text-gray-600 mb-4">교과감독과 복도감독의 업무강도를 입력해주세요.<br>업무 강도에 따라 감독배정점수가 계산되며 균등 조정에 활용됩니다.</p>
+<div class="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+<div class="flex items-center justify-between">
+<label for="classroomWeight" class="text-base font-medium text-gray-700">교과감독</label>
+<input type="number" id="classroomWeight" min="0" step="0.5" value="2" class="w-24 p-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
+</div>
+<div class="flex items-center justify-between">
+<label for="hallwayWeight" class="text-base font-medium text-gray-700">복도감독</label>
+<input type="number" id="hallwayWeight" min="0" step="0.5" value="1" class="w-24 p-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
+</div>
+</div>
+</div>
+
+<div class="setting-field-group">
+<h3 class="text-xl font-bold text-gray-800 mb-2">감독 횟수 제한</h3>
+<div class="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+<div class="flex items-center justify-between">
+<label for="maxClassroom" class="text-base font-medium text-gray-700">최대 교과감독 횟수 (전체 기간)</label>
+<input type="number" id="maxClassroom" min="0" value="6" class="w-24 p-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
+</div>
+<div class="flex items-center justify-between">
+<label for="maxHallway" class="text-base font-medium text-gray-700">일일 최대 복도감독 횟수</label>
+<input type="number" id="maxHallway" min="0" value="1" class="w-24 p-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm">
+</div>
+</div>
+</div>
+
+<div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
+<label for="allowThirdClassroomProctor" class="flex items-center justify-between w-full cursor-pointer">
+<span class="text-base font-medium text-gray-700">하루 3번 교과감독 허용</span>
+<div class="toggle-switch relative inline-block w-12 h-6">
+<input type="checkbox" id="allowThirdClassroomProctor" class="sr-only peer">
+<span class="toggle-track absolute inset-0 bg-gray-300 rounded-full transition-all duration-300 ease-in-out"></span>
+<span class="toggle-thumb absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out"></span>
+</div>
+</label>
+</div>
+</div>
+
+<div class="mt-8 flex items-center justify-between p-4 bg-blue-50 rounded-xl border border-blue-200 shadow-sm">
+<label for="useMainSubProctoring" class="flex items-center justify-between w-full cursor-pointer">
+<span class="text-lg font-bold text-blue-800">정/부감독 모드</span>
+<div class="toggle-switch relative inline-block w-12 h-6">
+<input type="checkbox" id="useMainSubProctoring" class="sr-only peer">
+<span class="toggle-track absolute inset-0 bg-gray-300 rounded-full transition-all duration-300 ease-in-out"></span>
+<span class="toggle-thumb absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow-md transition-all duration-300 ease-in-out"></span>
+</div>
+</label>
+</div>
+
+<div class="button-group flex justify-end gap-3 mt-10">
+<button type="button" onclick="google.script.host.close()" class="cancel px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl text-lg transition-all transform hover:scale-105 duration-300 ease-in-out shadow-lg">취소</button>
+<button type="button" id="saveButton" onclick="saveSettings()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-lg transition-all transform hover:scale-105 duration-300 ease-in-out shadow-lg">설정 저장</button>
+</div>
+
+</div>
+</div>
+
+<div id="loading-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+<svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+</svg>
+<span id="loading-text" class="text-gray-700 font-medium text-lg leading-relaxed"></span>
+</div>
+
+<div id="apple-modal-overlay">
+<div class="apple-alert">
+<div class="apple-alert-content">
+<div id="apple-title" class="apple-alert-title"></div>
+<div id="apple-text" class="apple-alert-text"></div>
+</div>
+<div class="apple-alert-buttons" id="apple-buttons-container"></div>
+</div>
+</div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+// UI Element References
+const saveButton = document.getElementById('saveButton');
+const mainSubToggle = document.getElementById('useMainSubProctoring');
+const generalSettingsWrapper = document.getElementById('general-settings-wrapper');
+const loadingOverlay = document.getElementById('loading-overlay');
+const loadingText = document.getElementById('loading-text');
+
+// --- 애플 스타일 알림창 제어 함수 ---
+function appleAlert(title, text, onConfirm = null, showCancel = true, onCancel = null) {
+$('#apple-title').text(title);
+$('#apple-text').html(text);
+const $btns = $('#apple-buttons-container').empty();
+
+if (showCancel) {
+$btns.append(`<button id="apple-btn-cancel" class="apple-btn">아니요</button>`);
+$btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">예</button>`);
+$('#apple-btn-cancel').on('click', () => {
+$('#apple-modal-overlay').hide();
+if (onCancel) onCancel();
+});
+} else {
+$btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold" style="width: 100%;">확인</button>`);
+}
+
+$('#apple-btn-confirm').on('click', () => {
+$('#apple-modal-overlay').hide();
+if(onConfirm) onConfirm();
+});
+$('#apple-modal-overlay').css('display', 'flex');
+}
+
+// Load settings when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+loadingText.innerHTML = '설정을 불러오는 중...';
+loadingOverlay.style.display = 'flex';
+setTimeout(() => {
+if (typeof google !== 'undefined' && google.script) {
+google.script.run
+.withSuccessHandler(settings => {
+updateUiWithSettings(settings);
+loadingOverlay.style.display = 'none';
+})
+.withFailureHandler(error => {
+console.error('Failed to load settings:', error);
+loadingOverlay.style.display = 'none';
+appleAlert('오류 발생', '이전 설정 값을 불러오는 데 실패했습니다.<br>기본값으로 시작합니다.', null, false);
+updateUiWithSettings({});
+})
+.getProctorSettings();
+} else {
+// For local testing
+loadingOverlay.style.display = 'none';
+}
+}, 100);
+
+mainSubToggle.addEventListener('change', (event) => toggleDependentSettings(event.target.checked));
+});
+
+// Toggle general settings based on main/sub proctoring mode
+function toggleDependentSettings(isMainSubMode) {
+generalSettingsWrapper.classList.toggle('disabled', isMainSubMode);
+}
+
+// Update UI with loaded settings
+function updateUiWithSettings(settings) {
+document.getElementById('classroomWeight').value = settings.classroomWeight ?? 2;
+document.getElementById('hallwayWeight').value = settings.hallwayWeight ?? 1;
+document.getElementById('maxClassroom').value = settings.maxClassroom ?? 6;
+document.getElementById('maxHallway').value = settings.maxHallway ?? 1;
+document.getElementById('allowThirdClassroomProctor').checked = settings.allowThirdClassroomProctor || false;
+mainSubToggle.checked = settings.useMainSubProctoring || false;
+toggleDependentSettings(mainSubToggle.checked);
+}
+
+// ✅ [수정됨] Save settings
+function saveSettings() {
+const settings = {
+classroomWeight: parseFloat(document.getElementById('classroomWeight').value) || 0,
+hallwayWeight: parseFloat(document.getElementById('hallwayWeight').value) || 0,
+maxClassroom: parseInt(document.getElementById('maxClassroom').value) || 0,
+maxHallway: parseInt(document.getElementById('maxHallway').value) || 0,
+allowThirdClassroomProctor: document.getElementById('allowThirdClassroomProctor').checked,
+useMainSubProctoring: document.getElementById('useMainSubProctoring').checked
+};
+
+loadingText.innerHTML = '설정을 저장하고 있습니다...';
+loadingOverlay.style.display = 'flex';
+saveButton.disabled = true;
+
+if (typeof google !== 'undefined' && google.script) {
+google.script.run
+.withSuccessHandler(onSaveSuccess)
+.withFailureHandler(onSaveFailure)
+.saveSettingsAndCheckNextStep(settings); // 기존 saveProctorSettings에서 새 함수로 교체
+}
+}
+
+// ✅ [수정됨] Save success callback
+function onSaveSuccess(response) {
+saveButton.disabled = false;
+loadingOverlay.style.display = 'none';
+
+if (response === "show_subproctor_ui") {
+// 정/부 감독 모드일 경우 창 닫기 (백엔드에서 자동으로 새 창 호출함)
+google.script.host.close();
+} else if (response === "done" || response) {
+// 일반 모드일 경우 기존처럼 배정 여부 묻기
+appleAlert('저장이 완료되었습니다!', '이어서 감독 배정을 실행하시겠습니까?',
+() => { executeAssignment(); },
+true,
+() => { google.script.host.close(); }
+);
+} else {
+appleAlert('저장 실패', '서버에서 응답이 오지 않았습니다.', null, false);
+}
+}
+
+// Save failure callback
+function onSaveFailure(error) {
+saveButton.disabled = false;
+loadingOverlay.style.display = 'none';
+appleAlert('저장 실패', '오류가 발생했습니다:<br>' + error.message, null, false);
+}
+
+/**
+* Executes the proctor assignment process.
+*/
+function executeAssignment() {
+loadingText.innerHTML = '감독 배정 중입니다...<br><span class="text-sm mt-2 text-gray-500 block">교사 및 고사실 정보를 분석하여<br>감독을 배정하고 있습니다.</span>';
+loadingOverlay.style.display = 'flex';
+if (typeof google !== 'undefined' && google.script) {
+google.script.run
+.withSuccessHandler(showAssignmentResult)
+.withFailureHandler(showAssignmentError)
+.runAssignmentAndGetMessage();
+}
+}
+
+/**
+* Shows the result of a successful assignment.
+*/
+function showAssignmentResult(message) {
+loadingOverlay.style.display = 'none';
+appleAlert('감독 배정 완료!', message, () => {
+google.script.host.close();
+}, false);
+}
+
+/**
+* Shows an error message if the assignment fails.
+*/
+function showAssignmentError(error) {
+loadingOverlay.style.display = 'none';
+appleAlert('감독 배정 오류', error.message, null, false);
+}
+
+</script>
+</body>
+</html>

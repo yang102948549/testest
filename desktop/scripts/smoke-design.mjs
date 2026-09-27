@@ -1,0 +1,77 @@
+import { _electron as electron } from 'playwright-core';
+import electronPath from 'electron';
+import path from 'node:path';
+import {mkdir,writeFile} from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import ExcelJS from 'exceljs';
+const dir=path.resolve('test-artifacts');await mkdir(dir,{recursive:true});
+const app=await electron.launch({executablePath:electronPath,args:['.'],env:{...process.env,PROCTOR_TEST_HIDDEN:'1',PROCTOR_TEST_DATA:path.join(dir,`ios-design-${Date.now()}`)}});
+try {
+const page=await app.firstWindow();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+const saved=async()=>{await page.keyboard.press('Control+s');await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent?.trim()==='저장됨');};
+await saved();await page.getByRole('button',{name:'예시 고사 둘러보기',exact:true}).click();await page.getByRole('button',{name:'확인',exact:true}).click();await saved();
+await page.screenshot({path:path.join(dir,'ios-schedule.png')});
+const inline=page.getByLabel('2026-10-19 2교시 1학년 과목',{exact:true});await inline.fill('통합과학');await inline.press('Enter');await saved();
+// Arrow keys move between cells; a just-entered cell is selected, so typing replaces it.
+await inline.focus();await inline.press('End');await inline.press('ArrowRight');await page.keyboard.type('통합과학');await page.keyboard.press('ArrowRight');await page.keyboard.type('통합과학');
+assert.equal(await page.evaluate(()=>document.activeElement.dataset.cell),'2026-10-19|2|3');
+await page.keyboard.press('ArrowUp');assert.equal(await page.evaluate(()=>document.activeElement.dataset.cell),'2026-10-19|1|3');
+await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.dataset.cell),'2026-10-19|1|2');
+await saved();
+const p2=(await page.evaluate(async()=>(await window.desktop.current()).document)).lessons.filter(l=>l.date==='2026-10-19'&&l.period===2);
+assert.deepEqual(p2.map(l=>[l.grade,l.subject]).sort(),[[1,'통합과학'],[2,'통합과학'],[3,'통합과학']]);assert(p2.every(l=>l.roomIds.length===2));
+await page.getByRole('button',{name:'1-1 이름 변경',exact:true}).hover();await page.screenshot({path:path.join(dir,'ios-schedule-2.png')});
+await page.getByRole('button',{name:'시험일 추가',exact:true}).click();await page.getByRole('button',{name:'2026-10-22',exact:true}).click();await page.getByRole('button',{name:'2026-10-23',exact:true}).click();
+await page.screenshot({path:path.join(dir,'ios-calendar.png')});await page.getByRole('button',{name:'취소',exact:true}).click();
+await page.getByRole('button',{name:'2026-10-19 날짜 변경',exact:true}).click();await page.screenshot({path:path.join(dir,'ios-calendar-popover.png')});await page.keyboard.press('Escape');
+// Unsaved edits: leaving asks, and discarding restores the saved state.
+const c3=page.getByLabel('2026-10-19 3교시 2학년 과목',{exact:true});const before3=await c3.inputValue();await c3.fill('잘못 입력');await c3.press('Enter');
+assert.equal(await page.locator('.save-state').textContent(),'저장 안 됨');
+await page.getByRole('button',{name:'되돌리기',exact:true}).click();assert.equal(await c3.inputValue(),before3);
+await page.getByRole('button',{name:'다시 실행',exact:true}).click();assert.equal(await c3.inputValue(),'잘못 입력');
+await page.locator('nav').getByRole('button',{name:'교사 설정',exact:true}).click();
+await page.getByRole('button',{name:'저장하지 않고 이동',exact:true}).click();
+await page.locator('nav').getByRole('button',{name:'시험 설정',exact:true}).click();
+assert.equal(await page.getByLabel('2026-10-19 3교시 2학년 과목',{exact:true}).inputValue(),before3);
+// Split a cell into two subjects by class.
+await page.getByLabel('2026-10-19 1교시 2학년 과목',{exact:true}).hover();await page.getByRole('button',{name:'2026-10-19 1교시 2학년 과목 설정',exact:true}).click();
+await page.getByLabel('과목명 2',{exact:true}).fill('수학');await page.getByRole('dialog').getByRole('button',{name:'2-2',exact:true}).nth(1).click();
+await page.screenshot({path:path.join(dir,'ios-split.png')});
+await page.getByRole('button',{name:'적용완료',exact:true}).click();await saved();
+const split=(await page.evaluate(async()=>(await window.desktop.current()).document)).lessons.filter(l=>l.date==='2026-10-19'&&l.period===1&&l.grade===2);
+assert.equal(split.length,2);assert.deepEqual(split.map(l=>l.roomIds.length).sort(),[1,1]);
+const before=await page.evaluate(async()=>(await window.desktop.current()).document);
+await page.getByRole('button',{name:'1-1 이름 변경',exact:true}).click();await page.getByLabel('고사실 새 이름').fill('1학년 1반');await page.getByRole('button',{name:'이름 변경',exact:true}).click();await saved();
+const after=await page.evaluate(async()=>(await window.desktop.current()).document);
+assert.equal(before.rooms[0].id,after.rooms[0].id);assert.equal(after.rooms[0].name,'1학년 1반');
+await page.getByRole('button',{name:'1학년 1반 이름 변경',exact:true}).click();await page.getByLabel('고사실 새 이름').fill('취소할 이름');await page.getByRole('button',{name:'취소',exact:true}).click();assert(await page.getByRole('button',{name:'1학년 1반 이름 변경',exact:true}).isVisible());
+await page.getByRole('button',{name:'교사 설정',exact:true}).click();await page.screenshot({path:path.join(dir,'ios-teachers.png')});
+await page.getByRole('button',{name:'김민서 담당과목 선택',exact:true}).click();await page.screenshot({path:path.join(dir,'ios-picker.png')});assert.equal(await page.locator('.selection-grid .selection-mark').count()>0,true);await page.getByRole('button',{name:'취소',exact:true}).click();
+await page.getByLabel('이서준 역할',{exact:true}).selectOption('lecturer');await saved();
+await page.getByRole('tab',{name:/특별교사 감독 설정/}).click();
+await page.getByLabel('이서준 2026-10-19 1교시 지정배치',{exact:true}).check();await saved();
+assert.equal(await page.getByLabel('이서준 배치 자리',{exact:true}).inputValue(),'hallwayFirst');
+await page.getByLabel('이서준 배치 자리',{exact:true}).selectOption('classroomFirst');await saved();
+const lecturer=(await page.evaluate(async()=>(await window.desktop.current()).document)).teachers.find(t=>t.name==='이서준');
+assert.equal(lecturer.role,'lecturer');assert.equal(lecturer.placement,'classroomFirst');assert.deepEqual(lecturer.availability,[{date:'2026-10-19',period:1}]);
+await page.screenshot({path:path.join(dir,'ios-times.png')});
+await page.getByRole('tab',{name:/감독불가 교사 설정/}).click();
+// Timetable import (Excel): 월(19) 1교시 수업 → 김민서·박지우 감독불가.
+const tt=path.join(dir,'timetable-example.xlsx');const book=new ExcelJS.Workbook();book.addWorksheet('1학년').addRows([['교시','월(19)','화(20)'],['1','국어\n김민서','수학\n박지'],['2','고사\n박지우','']]);await book.xlsx.writeFile(tt);
+await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},tt);
+await page.getByRole('button',{name:'시간표에서 불러오기',exact:true}).click();await page.getByRole('button',{name:'엑셀 시간표',exact:true}).click();
+await page.getByRole('button',{name:/시간표 파일 선택/}).click();await page.getByLabel('박지 연결할 교사',{exact:true}).selectOption({label:'박지우 (영어)'});
+await page.screenshot({path:path.join(dir,'ios-timetable.png')});
+await page.getByLabel('김민서 적용',{exact:true}).uncheck();await page.getByRole('button',{name:'1명 적용',exact:true}).waitFor();await page.getByLabel('김민서 적용',{exact:true}).check();
+await page.getByRole('button',{name:'2명 적용',exact:true}).click();await saved();
+const imported=(await page.evaluate(async()=>(await window.desktop.current()).document)).teachers;
+const avail=n=>imported.find(t=>t.name===n).availability?.filter(x=>x.date==='2026-10-19'||x.date==='2026-10-20').map(x=>x.date+'/'+x.period);
+assert(!avail('김민서').includes('2026-10-19/1'));assert(!avail('박지우').includes('2026-10-20/1'));assert(avail('박지우').includes('2026-10-19/2'));
+assert.equal(imported.find(t=>t.name==='박지우').exclusionReason,'교과수업');assert.equal(await page.getByLabel('이서준 2026-10-19 1교시 불가',{exact:true}).count(),0);await page.getByLabel('김민서 2026-10-19 2교시 불가',{exact:true}).check();await saved();await page.screenshot({path:path.join(dir,'ios-blocked.png')});
+await page.getByRole('button',{name:'시험 설정',exact:true}).click();await page.getByRole('tab',{name:/감독 방식·배정 기준/}).click();await page.screenshot({path:path.join(dir,'ios-rules.png')});
+await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(1040,750));
+assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+assert.deepEqual(errors,[]);
+await writeFile(path.join(dir,'ios-design-report.json'),JSON.stringify({passed:true,roomRenamePreservesId:true,cancelPreservesName:true,smallWindowNoOverflow:true,rendererErrors:errors},null,2));
+console.log('디자인 UI 검증 통과: 학급 칩 이름 변경·취소, ID 유지, 선택 체크, 작은 창');
+} finally {await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}

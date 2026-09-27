@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; background-color: #f2f2f7; margin: 0; padding: 20px; color: #1d1d1f; }
+    
+    .date-card { background: white; border-radius: 28px; border: 1px solid #e5e5ea; padding: 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .period-section { background: #f9f9fb; border-radius: 20px; border: 1px solid #e5e5ea; padding: 20px; margin-bottom: 16px; transition: all 0.2s; }
+    .period-section:last-child { margin-bottom: 0; }
+    
+    .room-card { background: white; border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #d1d1d6; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+    .room-card:hover { border-color: #007AFF; box-shadow: 0 2px 8px rgba(0, 122, 255, 0.15); transform: translateY(-1px); }
+    .room-card:has(input:checked) { border-color: #007AFF; background-color: #f4f9ff; }
+    .custom-checkbox { width: 20px; height: 20px; accent-color: #007AFF; cursor: pointer; }
+
+    .apple-save-btn { background: linear-gradient(180deg, #007AFF 0%, #0066CC 100%); color: white; box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3); transition: all 0.3s; }
+    .apple-save-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4); }
+    .spinner { animation: spin 1s linear infinite; border: 4px solid #e5e5ea; border-top-color: #007AFF; width: 40px; height: 40px; border-radius: 50%; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ✅ 애플 스타일 알림창 CSS 추가 */
+    #apple-modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 30000; }
+    .apple-alert { background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out; }
+    @keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .apple-alert-content { padding: 20px 16px; text-align: center; }
+    .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+    .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+    .apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); height: 44px; align-items: stretch; }
+    .apple-btn { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 17px; background: transparent; border: none; color: #007AFF; cursor: pointer; outline: none; margin: 0; }
+    .apple-btn:active, .apple-btn:hover { background: rgba(0, 0, 0, 0.05) !important; }
+    .apple-btn-bold { font-weight: 600; }
+    .apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+  </style>
+</head>
+<body>
+
+  <!-- ✅ 애플 스타일 알림창 HTML 구조 추가 -->
+  <div id="apple-modal-overlay">
+    <div class="apple-alert">
+      <div class="apple-alert-content">
+        <div id="apple-title" class="apple-alert-title"></div>
+        <div id="apple-text" class="apple-alert-text"></div>
+      </div>
+      <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto">
+    <div class="mb-8 px-4">
+      <h2 class="text-3xl font-bold tracking-tight">단독 감독 고사실 세부 설정</h2>
+      <p class="text-[#8e8e93] mt-3 text-[15px] leading-relaxed font-medium">
+        날짜와 교시별로 <b>부감독 없이 정감독 1명만 배정(단독)될 고사실</b>을 선택하세요.<br>
+        해당 교시에 <u>실제로 시험을 보는 고사실만</u> 화면에 표시됩니다. <span class="text-[#007AFF] font-bold">파란색으로 체크된 고사실</span>은 부감독이 배정되지 않습니다.
+      </p>
+    </div>
+
+    <div id="loading" class="text-center py-24"><div class="spinner mb-5"></div><p class="text-[#8e8e93] font-bold text-lg" id="loading-text">시험 일정 및 고사실 데이터를 분석 중입니다...</p></div>
+    
+    <div id="content-container" class="hidden">
+        <div id="dates-container" class="space-y-6"></div>
+        <button onclick="saveSettings()" class="w-full py-5 mt-8 apple-save-btn text-white font-bold rounded-2xl text-xl" id="save-btn">
+          설정 저장
+        </button>
+    </div>
+  </div>
+
+  <script>
+    $(function() {
+      google.script.run.withSuccessHandler(renderUI).withFailureHandler(err => {
+        $('#loading').html(`<div class="text-red-500 font-bold text-lg">로드 실패:<br>${err.message}</div>`);
+      }).getRoomsForSubProctorSetting();
+    });
+
+    // ✅ 애플 스타일 Alert JS 함수 추가
+    function appleAlert(title, text, onConfirm = null, showCancel = true, onCancel = null) {
+      $('#apple-title').text(title); $('#apple-text').html(text);
+      const $btns = $('#apple-buttons-container').empty();
+      if (showCancel) {
+        $btns.append(`<button id="apple-btn-cancel" class="apple-btn">아니요</button><button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">예</button>`);
+        $('#apple-btn-cancel').on('click', () => { $('#apple-modal-overlay').hide(); if(onCancel) onCancel(); });
+      } else {
+        $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold w-full">확인</button>`);
+      }
+      $('#apple-btn-confirm').on('click', () => { $('#apple-modal-overlay').hide(); if(onConfirm) onConfirm(); });
+      $('#apple-modal-overlay').css('display', 'flex');
+    }
+
+    function getWeekday(dateStr) { const days = ['일', '월', '화', '수', '목', '금', '토']; return days[new Date(dateStr).getDay()]; }
+    function formatMDW(dateStr) { const parts = dateStr.split('-'); if(parts.length !== 3) return dateStr; return `${parseInt(parts[1])}.${parseInt(parts[2])}(${getWeekday(dateStr)})`; }
+
+    function renderUI(data) {
+      $('#loading').hide(); $('#content-container').removeClass('hidden');
+      
+      const examData = data.examData;
+      const singleRooms = data.singleRooms || {}; 
+      const $container = $('#dates-container').empty();
+      const dates = Object.keys(examData).sort();
+
+      if (dates.length === 0) {
+        $container.html('<div class="bg-white rounded-3xl p-10 text-center text-red-500 font-bold border border-[#e5e5ea] text-lg">해당 일정에 설정된 고사실이 없습니다.<br>시험 일정을 먼저 설정해주세요.</div>'); return;
+      }
+
+      dates.forEach(date => {
+        const periods = examData[date];
+        let dateCardHtml = `<div class="date-card"><h3 class="text-2xl font-bold text-[#000] mb-6 flex items-center gap-3"><span class="w-2.5 h-7 bg-[#007AFF] rounded-full"></span>${formatMDW(date)}</h3>`;
+
+        Object.keys(periods).sort((a,b) => parseInt(a) - parseInt(b)).forEach(p => {
+          const rooms = periods[p];
+          if(rooms.length === 0) return;
+
+          dateCardHtml += `
+            <div class="period-section">
+              <div class="flex justify-between items-center mb-4 pl-1">
+                <h4 class="font-bold text-lg text-[#1d1d1f] flex items-center gap-2"><span class="w-7 h-7 rounded-full bg-[#e5e5ea] text-sm flex items-center justify-center">${p}</span>${p}교시</h4>
+                <span class="text-sm text-[#007AFF] font-bold bg-[#eff6ff] px-3 py-1 rounded-lg">${rooms.length}개 고사실 배정됨</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          `;
+
+          rooms.forEach(room => {
+            const isChecked = singleRooms[date] && singleRooms[date][p] && singleRooms[date][p].includes(room);
+            
+            dateCardHtml += `
+              <label class="room-card group">
+                <span class="font-bold text-[15px] group-hover:text-[#007AFF] transition-colors room-name">${room}</span>
+                <input type="checkbox" class="custom-checkbox room-cb" data-date="${date}" data-period="${p}" value="${room}" ${isChecked ? 'checked' : ''}/>
+              </label>
+            `;
+          });
+          dateCardHtml += `</div></div>`;
+        });
+        dateCardHtml += `</div>`;
+        $container.append(dateCardHtml);
+      });
+    }
+
+    function saveSettings() {
+      const selectedData = {};
+      
+      $('.room-cb:checked').each(function() {
+        const d = $(this).data('date'), p = $(this).data('period'), r = $(this).val();
+        if (!selectedData[d]) selectedData[d] = {}; 
+        if (!selectedData[d][p]) selectedData[d][p] = [];
+        selectedData[d][p].push(r);
+      });
+
+      $('#save-btn').text('저장 중...').prop('disabled', true).css('opacity', '0.7');
+
+      google.script.run
+        .withSuccessHandler(() => {
+          $('#save-btn').text('설정 저장 완료').prop('disabled', false).css('opacity', '1');
+          
+          // ✅ 1. 저장 성공 시 알림창 띄우고 배정 실행 여부 묻기
+          appleAlert('설정이 저장되었습니다!', '이어서 <b>감독 배정을 실행</b>하시겠습니까?', 
+            () => { executeAssignment(); }, // 예: 감독 배정 실행
+            true, 
+            () => { google.script.host.close(); } // 아니요: 창 닫기
+          );
+        })
+        .withFailureHandler(err => { 
+          appleAlert("오류 발생", err.message, null, false); 
+          $('#save-btn').text('설정 저장').prop('disabled', false).css('opacity', '1'); 
+        })
+        .saveSingleProctorRooms(selectedData); // 현재 code.gs와 완벽 연동됨
+    }
+
+    // ✅ 2. 실제 감독 배정 로직 호출 함수 복원
+    function executeAssignment() {
+      $('#content-container').hide();
+      $('#loading-text').html('감독 배정 중입니다...<br><span class="text-sm mt-2 text-[#8e8e93] block">교사 및 고사실 정보를 분석하여<br>최적의 배정을 진행하고 시트를 생성합니다.</span>');
+      $('#loading').show();
+
+      google.script.run
+        .withSuccessHandler(message => {
+          $('#loading').hide();
+          appleAlert('감독 배정 완료!', message, () => {
+            google.script.host.close();
+          }, false);
+        })
+        .withFailureHandler(error => {
+          $('#loading').hide();
+          $('#content-container').show();
+          appleAlert('배정 오류', error.message, null, false);
+        })
+        .runAssignmentAndGetMessage(); // code.gs의 배정 실행 및 시트 출력 함수 호출
+    }
+  </script>
+</body>
+</html>

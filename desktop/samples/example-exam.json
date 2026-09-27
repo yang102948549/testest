@@ -1,0 +1,688 @@
+{
+  "version": 1,
+  "id": "90b81032-a98b-483f-bae7-c78005d0d0e3",
+  "title": "2026학년도 2학기 중간고사",
+  "dates": [
+    {
+      "date": "2026-10-19",
+      "periods": 3
+    },
+    {
+      "date": "2026-10-20",
+      "periods": 3
+    },
+    {
+      "date": "2026-10-21",
+      "periods": 3
+    }
+  ],
+  "rooms": [
+    {
+      "id": "r0",
+      "name": "1-1",
+      "grade": 1,
+      "kind": "classroom"
+    },
+    {
+      "id": "r1",
+      "name": "2-1",
+      "grade": 2,
+      "kind": "classroom"
+    },
+    {
+      "id": "r2",
+      "name": "3-1",
+      "grade": 3,
+      "kind": "classroom"
+    },
+    {
+      "id": "r3",
+      "name": "1-2",
+      "grade": 1,
+      "kind": "classroom"
+    },
+    {
+      "id": "r4",
+      "name": "2-2",
+      "grade": 2,
+      "kind": "classroom"
+    },
+    {
+      "id": "r5",
+      "name": "3-2",
+      "grade": 3,
+      "kind": "classroom"
+    },
+    {
+      "id": "hall",
+      "name": "본관 복도",
+      "grade": 1,
+      "kind": "hallway"
+    }
+  ],
+  "lessons": [
+    {
+      "id": "l0-1-1",
+      "date": "2026-10-19",
+      "period": 1,
+      "grade": 1,
+      "subject": "영어",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l0-1-2",
+      "date": "2026-10-19",
+      "period": 1,
+      "grade": 2,
+      "subject": "사회",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l0-1-3",
+      "date": "2026-10-19",
+      "period": 1,
+      "grade": 3,
+      "subject": "과학",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l0-2-1",
+      "date": "2026-10-19",
+      "period": 2,
+      "grade": 1,
+      "subject": "사회",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l0-2-2",
+      "date": "2026-10-19",
+      "period": 2,
+      "grade": 2,
+      "subject": "과학",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l0-2-3",
+      "date": "2026-10-19",
+      "period": 2,
+      "grade": 3,
+      "subject": "역사",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l0-3-1",
+      "date": "2026-10-19",
+      "period": 3,
+      "grade": 1,
+      "subject": "과학",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l0-3-2",
+      "date": "2026-10-19",
+      "period": 3,
+      "grade": 2,
+      "subject": "역사",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l0-3-3",
+      "date": "2026-10-19",
+      "period": 3,
+      "grade": 3,
+      "subject": "음악",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l1-1-1",
+      "date": "2026-10-20",
+      "period": 1,
+      "grade": 1,
+      "subject": "역사",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l1-1-2",
+      "date": "2026-10-20",
+      "period": 1,
+      "grade": 2,
+      "subject": "음악",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l1-1-3",
+      "date": "2026-10-20",
+      "period": 1,
+      "grade": 3,
+      "subject": "미술",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l1-2-1",
+      "date": "2026-10-20",
+      "period": 2,
+      "grade": 1,
+      "subject": "음악",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l1-2-2",
+      "date": "2026-10-20",
+      "period": 2,
+      "grade": 2,
+      "subject": "미술",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l1-2-3",
+      "date": "2026-10-20",
+      "period": 2,
+      "grade": 3,
+      "subject": "국어",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l1-3-1",
+      "date": "2026-10-20",
+      "period": 3,
+      "grade": 1,
+      "subject": "미술",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l1-3-2",
+      "date": "2026-10-20",
+      "period": 3,
+      "grade": 2,
+      "subject": "국어",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l1-3-3",
+      "date": "2026-10-20",
+      "period": 3,
+      "grade": 3,
+      "subject": "수학",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l2-1-1",
+      "date": "2026-10-21",
+      "period": 1,
+      "grade": 1,
+      "subject": "국어",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l2-1-2",
+      "date": "2026-10-21",
+      "period": 1,
+      "grade": 2,
+      "subject": "수학",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l2-1-3",
+      "date": "2026-10-21",
+      "period": 1,
+      "grade": 3,
+      "subject": "영어",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l2-2-1",
+      "date": "2026-10-21",
+      "period": 2,
+      "grade": 1,
+      "subject": "수학",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l2-2-2",
+      "date": "2026-10-21",
+      "period": 2,
+      "grade": 2,
+      "subject": "영어",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l2-2-3",
+      "date": "2026-10-21",
+      "period": 2,
+      "grade": 3,
+      "subject": "사회",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    },
+    {
+      "id": "l2-3-1",
+      "date": "2026-10-21",
+      "period": 3,
+      "grade": 1,
+      "subject": "영어",
+      "roomIds": [
+        "r0",
+        "r3"
+      ]
+    },
+    {
+      "id": "l2-3-2",
+      "date": "2026-10-21",
+      "period": 3,
+      "grade": 2,
+      "subject": "사회",
+      "roomIds": [
+        "r1",
+        "r4"
+      ]
+    },
+    {
+      "id": "l2-3-3",
+      "date": "2026-10-21",
+      "period": 3,
+      "grade": 3,
+      "subject": "과학",
+      "roomIds": [
+        "r2",
+        "r5"
+      ]
+    }
+  ],
+  "teachers": [
+    {
+      "id": "t0",
+      "name": "김민서",
+      "subjects": [
+        "국어"
+      ],
+      "homeroom": "r0",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t1",
+      "name": "이서준",
+      "subjects": [
+        "수학"
+      ],
+      "homeroom": "r1",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t2",
+      "name": "박지우",
+      "subjects": [
+        "영어"
+      ],
+      "homeroom": "r2",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t3",
+      "name": "최서연",
+      "subjects": [
+        "사회"
+      ],
+      "homeroom": "r3",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t4",
+      "name": "정하준",
+      "subjects": [
+        "과학"
+      ],
+      "homeroom": "r4",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t5",
+      "name": "강도윤",
+      "subjects": [
+        "역사"
+      ],
+      "homeroom": "r5",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t6",
+      "name": "조수빈",
+      "subjects": [
+        "음악"
+      ],
+      "homeroom": "hall",
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t7",
+      "name": "윤지호",
+      "subjects": [
+        "미술"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t8",
+      "name": "장예린",
+      "subjects": [
+        "국어"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t9",
+      "name": "임현우",
+      "subjects": [
+        "수학"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t10",
+      "name": "한소윤",
+      "subjects": [
+        "영어"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t11",
+      "name": "오유진",
+      "subjects": [
+        "사회"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t12",
+      "name": "서준호",
+      "subjects": [
+        "과학"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t13",
+      "name": "신예은",
+      "subjects": [
+        "역사"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t14",
+      "name": "권지훈",
+      "subjects": [
+        "음악"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t15",
+      "name": "황수아",
+      "subjects": [
+        "미술"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t16",
+      "name": "안민준",
+      "subjects": [
+        "국어"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t17",
+      "name": "송지안",
+      "subjects": [
+        "수학"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t18",
+      "name": "류서현",
+      "subjects": [
+        "영어"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t19",
+      "name": "전시우",
+      "subjects": [
+        "사회"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t20",
+      "name": "홍다은",
+      "subjects": [
+        "과학"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t21",
+      "name": "고은우",
+      "subjects": [
+        "역사"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t22",
+      "name": "문채원",
+      "subjects": [
+        "음악"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    },
+    {
+      "id": "t23",
+      "name": "양도현",
+      "subjects": [
+        "미술"
+      ],
+      "homeroom": null,
+      "movingRooms": [],
+      "role": "normal",
+      "note": "",
+      "availability": null,
+      "exclusions": []
+    }
+  ],
+  "singleRooms": [],
+  "settings": {
+    "mode": "general",
+    "classroomWeight": 2,
+    "hallwayWeight": 1,
+    "maxClassroom": 6,
+    "maxHallway": 1,
+    "allowThird": false,
+    "seed": 2026
+  },
+  "result": null,
+  "updatedAt": "2026-09-26T15:34:02.972Z"
+}

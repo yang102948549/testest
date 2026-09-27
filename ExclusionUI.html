@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; 
+        }
+        .table-container { overflow: auto; flex-grow: 1; }
+        thead { position: sticky; top: 0; z-index: 20; }
+        tbody th { position: sticky; left: 0; z-index: 10; }
+        thead th:first-child { position: sticky; left: 0; z-index: 30; }
+        tbody td:last-child { position: sticky; right: 0; z-index: 10; }
+        thead th:last-child { position: sticky; right: 0; z-index: 30; }
+        thead th { background-color: #f8fafc; }
+        tbody th, tbody td:last-child { background-color: #ffffff; }
+
+        .exclusion-cb-base {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            cursor: pointer;
+            accent-color: #3b82f6;
+        }
+        .auto-checked {
+            width: 20px;
+            height: 20px;
+            min-width: 20px;
+            min-height: 20px;
+            cursor: pointer;
+            accent-color: #ef4444;
+        }
+        .bg-auto-checked { background-color: #fef2f2; }
+
+        #apple-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 30000;
+        }
+        .apple-alert {
+            background: rgba(255,255,255,0.85); width: 270px; border-radius: 14px;
+            overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .apple-alert-content { padding: 20px 16px; text-align: center; }
+        .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+        .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+        .apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60,60,67,0.2); }
+        .apple-btn {
+            flex: 1; padding: 12px; font-size: 17px; background: transparent; border: none;
+            color: #007AFF; cursor: pointer; outline: none;
+        }
+        .apple-btn:active { background: rgba(0,0,0,0.05); }
+        .apple-btn-bold { font-weight: 600; }
+        .apple-btn-border { border-left: 0.5px solid rgba(60,60,67,0.2); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-700 h-screen flex flex-col p-4">
+
+    <div class="w-full h-full bg-white p-6 rounded-2xl shadow-lg flex flex-col flex-grow overflow-hidden">
+        <div class="pb-6 border-b border-slate-200">
+            <div class="flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800">감독 제외 교시 설정</h2>
+                    <p class="mt-1 text-slate-500">
+                        육아시간 및 출장 등 기타 사유로 <span class="font-bold text-red-500">감독이 불가능한 교시</span>에 체크 후 저장해주세요.<br>
+                        <span class="inline-block w-3 h-3 bg-red-100 border border-red-300 rounded-sm align-middle mr-1"></span>
+                        <span class="font-bold text-red-500">붉은색 칸</span>은 시간표 분석으로 수업이 있어 자동 체크된 교시입니다. 필요 시 수정 가능합니다.
+                    </p>
+                </div>
+                <div class="flex gap-3 flex-shrink-0">
+                    <button id="load-timetable-btn" class="px-5 py-2 bg-white text-slate-600 border border-slate-300 rounded-md hover:bg-slate-50 hover:border-slate-400 transition-colors font-semibold shadow-sm">
+                        시간표에서 불러오기
+                    </button>
+                    <button id="save-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-semibold shadow-sm">
+                        설정 저장 및 다음 단계
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="table-container mt-6">
+            <table id="exclusion-table" class="w-full table-fixed text-sm text-center border-collapse">
+                <thead class="text-slate-600 font-medium"></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="upload-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); backdrop-filter:blur(5px); align-items:center; justify-content:center; z-index:20000;">
+        <div style="background:white; width:90%; max-width:480px; border-radius:24px; padding:28px; box-shadow:0 20px 40px rgba(0,0,0,0.15); display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:18px; font-weight:700; color:#1e293b;">시간표 파일 업로드</h3>
+                <button id="close-upload-btn" style="font-size:24px; color:#94a3b8; background:none; border:none; cursor:pointer; line-height:1;">&times;</button>
+            </div>
+            <p style="font-size:13px; color:#64748b; line-height:1.6;">
+                학년별 시간표 엑셀 파일(.xlsx)을 선택해주세요.<br>
+                여러 학년 파일을 동시에 선택할 수 있습니다.
+            </p>
+
+            <input type="file" id="timetable-file-input" accept=".xlsx,.xls" multiple style="display:none;">
+
+            <div id="file-drop-zone" style="border:2px dashed #cbd5e1; border-radius:16px; padding:24px; text-align:center; cursor:pointer; transition:all 0.2s;">
+                <div style="font-size:32px; margin-bottom:8px;">📂</div>
+                <div style="font-size:14px; font-weight:600; color:#475569;">클릭하여 파일 선택</div>
+                <div style="font-size:12px; color:#94a3b8; margin-top:4px;">또는 파일을 여기에 끌어다 놓으세요</div>
+                <div style="font-size:12px; color:#94a3b8;">.xlsx, .xls 파일 지원 / 여러 파일 선택 가능</div>
+            </div>
+
+            <div id="file-list" style="display:none; flex-direction:column; gap:8px; max-height:160px; overflow-y:auto;"></div>
+
+            <div id="upload-progress" style="display:none;">
+                <div style="font-size:13px; color:#475569; margin-bottom:8px;" id="upload-progress-text">처리 중...</div>
+                <div style="background:#e2e8f0; border-radius:99px; height:6px;">
+                    <div id="upload-progress-bar" style="background:#3b82f6; border-radius:99px; height:6px; width:0%; transition:width 0.3s;"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <button id="cancel-upload-btn" style="flex:1; padding:12px; background:#f1f5f9; color:#475569; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer;">취소</button>
+                <button id="upload-confirm-btn" style="flex:1; padding:12px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; opacity:0.4;" disabled>
+                    업로드 및 분석
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; flex-direction:column; justify-content:center; align-items:center;">
+        <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span id="loading-text" class="text-gray-700 font-medium text-lg"></span>
+    </div>
+
+    <div id="apple-modal-overlay">
+        <div class="apple-alert">
+            <div class="apple-alert-content">
+                <div id="apple-title" class="apple-alert-title"></div>
+                <div id="apple-text" class="apple-alert-text"></div>
+            </div>
+            <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+        </div>
+    </div>
+
+    <script>
+    // schedule, teachers, timetableData, hasSavedExclusions 는 서버에서 <script> 태그로 주입됨
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingText = document.getElementById('loading-text');
+    const table = $('#exclusion-table');
+    let selectedFiles = [];
+
+    let forceAutoCheck = false; // 업로드 직후 자동체크 강제 적용 플래그
+
+    function appleAlert(title, text, onConfirm, showCancel) {
+        if (onConfirm === undefined) onConfirm = null;
+        if (showCancel === undefined) showCancel = true;
+        $('#apple-title').text(title);
+        $('#apple-text').html(text);
+        const $btns = $('#apple-buttons-container').empty();
+        if (showCancel) {
+            $btns.append('<button id="apple-btn-cancel" class="apple-btn">취소</button>');
+            $btns.append('<button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">확인</button>');
+            $('#apple-btn-cancel').on('click', function() { $('#apple-modal-overlay').hide(); });
+        } else {
+            $btns.append('<button id="apple-btn-confirm" class="apple-btn apple-btn-bold" style="width:100%;">확인</button>');
+        }
+        $('#apple-btn-confirm').on('click', function() {
+            $('#apple-modal-overlay').hide();
+            if (onConfirm) onConfirm();
+        });
+        $('#apple-modal-overlay').css('display', 'flex');
+    }
+
+    function formatDateToMDWeekday(dateString) {
+        const dateObj = new Date(dateString);
+        if (isNaN(dateObj)) return dateString;
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        return month + '.' + day + '(' + weekdays[dateObj.getDay()] + ')';
+    }
+
+    function renderTable() {
+        table.find('thead').empty();
+        table.find('tbody').empty();
+
+        let headerRow1 = '<tr class="border-b-2 border-slate-300"><th class="p-3 w-28 text-base border-r border-slate-200" rowspan="2">교사명</th>';
+        schedule.dates.forEach(function(dateStr) {
+            headerRow1 += '<th class="py-3 px-1 font-bold text-slate-700 text-lg border-l border-slate-200" colspan="' + schedule.periods + '">' + formatDateToMDWeekday(dateStr) + '</th>';
+        });
+        headerRow1 += '<th class="p-3 w-40 text-base border-l border-slate-200" rowspan="2">사유 입력</th></tr>';
+
+        let headerRow2 = '<tr class="border-b-2 border-slate-300">';
+        schedule.dates.forEach(function() {
+            for (let p = 1; p <= schedule.periods; p++) {
+                headerRow2 += '<th class="py-2 px-1 text-sm font-medium border-l border-slate-200">' + p + '교시</th>';
+            }
+        });
+        headerRow2 += '</tr>';
+        table.find('thead').html(headerRow1 + headerRow2);
+
+        teachers.forEach(function(teacher) {
+            let rowHtml = '<tr class="border-t border-slate-200 hover:bg-slate-50/50 transition-colors group">'
+                + '<th class="p-2 w-28 font-bold text-slate-800 text-base border-r border-slate-200 group-hover:bg-slate-100/80 transition-colors">' + teacher.name + '</th>';
+
+            let hasAutoChecked = false;
+            const exclusions = teacher.exclusions || {};
+
+            schedule.dates.forEach(function(dateStr) {
+                const dateKey = dateStr.slice(0, 10);
+
+                for (let p = 1; p <= schedule.periods; p++) {
+                    const key = teacher.name + '-' + dateKey + '-' + p;
+
+                    const isAutoChecked = !!(timetableData[teacher.name]
+                        && timetableData[teacher.name][dateKey]
+                        && timetableData[teacher.name][dateKey].includes(p));
+
+                    const isManualChecked = !!(exclusions[dateKey] && exclusions[dateKey].includes(p));
+
+                    if (isAutoChecked) hasAutoChecked = true;
+
+                    // 배경색 및 체크박스 디자인은 시간표(timetableData) 기준으로 항상 유지
+                    const bgClass = isAutoChecked ? 'bg-auto-checked' : '';
+                    const cbClass = isAutoChecked ? 'auto-checked' : 'exclusion-cb-base';
+
+                    // ✅ 체크 여부 로직: 플래그(hasSavedExclusions) 우선 적용
+                    let isChecked;
+                    if (forceAutoCheck) {
+                        isChecked = isAutoChecked ? 'checked' : '';
+                    } else if (typeof hasSavedExclusions !== 'undefined' && hasSavedExclusions) {
+                        isChecked = isManualChecked ? 'checked' : '';
+                    } else {
+                        isChecked = isAutoChecked ? 'checked' : '';
+                    }
+
+                    rowHtml += '<td class="border-l border-slate-200 ' + bgClass + '">'
+                        + '<label for="cb-' + key + '" class="w-full h-full flex justify-center items-center p-2 cursor-pointer">'
+                        + '<input id="cb-' + key + '" type="checkbox"'
+                        + ' class="exclusion-timetable-cb ' + cbClass + '"'
+                        + ' data-teacher="' + teacher.name + '"'
+                        + ' data-date="' + dateKey + '"'
+                        + ' data-period="' + p + '"'
+                        + ' ' + isChecked + '>'
+                        + '</label></td>';
+                }
+            });
+
+            let savedReason = teacher.exclusionReason || '';
+            
+            // 💡 수정된 로직: 자동 체크(붉은 칸)가 있는데 사유가 비어있을 때
+            if (hasAutoChecked && savedReason.trim() === '') {
+                // 아직 수동 저장을 한 번도 안 했거나(최초 진입), 새 시간표를 방금 업로드한 경우에만 '교과수업' 삽입
+                if (!window.hasSavedExclusions || forceAutoCheck) {
+                    savedReason = '교과수업';
+                }
+            }
+
+            rowHtml += '<td class="p-2 w-40 border-l border-slate-200 group-hover:bg-slate-100/80 transition-colors">'
+                + '<input type="text" class="reason-input w-full p-2 border border-slate-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition text-center" data-teacher="' + teacher.name + '" value="' + savedReason + '">'
+                + '</td>';
+            rowHtml += '</tr>';
+            table.find('tbody').append(rowHtml);
+        });
+    }
+
+    function executeSave() {
+        loadingText.textContent = '설정 내용을 서버에 저장하고 있습니다...';
+        loadingOverlay.style.display = 'flex';
+
+        const dataToSend = [];
+        teachers.forEach(function(teacher) {
+            const teacherName = teacher.name;
+            const teacherExclusions = {};
+
+            $('.exclusion-timetable-cb[data-teacher="' + teacherName + '"]:checked').each(function() {
+                const date = $(this).data('date');
+                const period = parseInt($(this).data('period'));
+                if (!teacherExclusions[date]) teacherExclusions[date] = [];
+                if (teacherExclusions[date].indexOf(period) === -1) {
+                    teacherExclusions[date].push(period);
+                }
+            });
+
+            const exclusionString = Object.entries(teacherExclusions)
+                .map(function(entry) {
+                    const date = entry[0];
+                    const periods = entry[1];
+                    return date + '(' + periods.sort(function(a, b) { return a - b; }).join(',') + ')';
+                })
+                .join('/');
+
+            const reason = $('.reason-input[data-teacher="' + teacherName + '"]').val().trim();
+            dataToSend.push({ teacherName: teacherName, exclusionString: exclusionString, reason: reason });
+        });
+
+        google.script.run
+            .withSuccessHandler(function() { 
+                loadingOverlay.style.display = 'none'; 
+                if (typeof hasSavedExclusions !== 'undefined') hasSavedExclusions = true; // ✅ 저장 성공 시 플래그 On
+            })
+            .withFailureHandler(function(error) {
+                loadingOverlay.style.display = 'none';
+                appleAlert('오류 발생', error.message, null, false);
+            })
+            .saveExclusionsAndShowSettings(dataToSend);
+    }
+
+    function openUploadModal() {
+        selectedFiles = [];
+        document.getElementById('file-list').innerHTML = '';
+        document.getElementById('file-list').style.display = 'none';
+        document.getElementById('upload-progress').style.display = 'none';
+        document.getElementById('timetable-file-input').value = '';
+        document.getElementById('upload-confirm-btn').disabled = true;
+        document.getElementById('upload-confirm-btn').style.opacity = '0.4';
+        document.getElementById('upload-modal').style.display = 'flex';
+    }
+
+    function closeUploadModal() {
+        document.getElementById('upload-modal').style.display = 'none';
+    }
+
+    function updateFileList() {
+        const listEl = document.getElementById('file-list');
+        listEl.innerHTML = '';
+
+        if (selectedFiles.length === 0) {
+            listEl.style.display = 'none';
+            document.getElementById('upload-confirm-btn').disabled = true;
+            document.getElementById('upload-confirm-btn').style.opacity = '0.4';
+            return;
+        }
+
+        listEl.style.display = 'flex';
+        document.getElementById('upload-confirm-btn').disabled = false;
+        document.getElementById('upload-confirm-btn').style.opacity = '1';
+
+        selectedFiles.forEach(function(file, idx) {
+            const item = document.createElement('div');
+            item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:10px 14px;';
+            item.innerHTML = '<span style="font-size:13px; font-weight:600; color:#334155;">📄 ' + file.name + '</span>'
+                + '<button class="remove-file-btn" data-idx="' + idx + '" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:18px; line-height:1; padding:0 0 0 8px;">&times;</button>';
+            listEl.appendChild(item);
+        });
+    }
+
+    function startUpload() {
+        if (selectedFiles.length === 0) return;
+
+        const progressEl = document.getElementById('upload-progress');
+        const progressText = document.getElementById('upload-progress-text');
+        const progressBar = document.getElementById('upload-progress-bar');
+        const confirmBtn = document.getElementById('upload-confirm-btn');
+
+        progressEl.style.display = 'block';
+        confirmBtn.disabled = true;
+        confirmBtn.style.opacity = '0.4';
+
+        const total = selectedFiles.length;
+        const fileDataArray = [];
+
+        function readNextFile(idx) {
+            if (idx >= total) {
+                progressText.textContent = '서버에 업로드 중...';
+                progressBar.style.width = '60%';
+
+                google.script.run
+                    .withSuccessHandler(function(result) {
+                        progressBar.style.width = '90%';
+                        progressText.textContent = '시간표 분석 결과 저장 중...';
+
+                        google.script.run
+                            .withSuccessHandler(function() {
+                                progressBar.style.width = '100%';
+                                progressText.textContent = '완료!';
+                                setTimeout(function() {
+                                    closeUploadModal();
+                                    if (!result || Object.keys(result).length === 0) {
+                                        appleAlert('알림', '시간표에서 매칭되는 수업을 찾지 못했습니다.', null, false);
+                                        return;
+                                    }
+                                    timetableData = result;
+                                    if (typeof hasSavedExclusions !== 'undefined') hasSavedExclusions = false; // ✅ 새 시간표 업로드 시 플래그 Off
+                                    forceAutoCheck = true;
+                                    renderTable();
+                                    forceAutoCheck = false;
+                                    appleAlert('완료', total + '개 파일 분석이 완료되었습니다.<br>붉은색 칸을 확인해주세요.', null, false);
+                                }, 500);
+                            })
+                            .withFailureHandler(function() {
+                                setTimeout(function() {
+                                    closeUploadModal();
+                                    timetableData = result;
+                                    renderTable();
+                                }, 500);
+                            })
+                            .saveTimetableData(result);
+                    })
+                    .withFailureHandler(function(error) {
+                        progressEl.style.display = 'none';
+                        confirmBtn.disabled = false;
+                        confirmBtn.style.opacity = '1';
+                        appleAlert('오류', error.message, null, false);
+                    })
+                    .uploadTimetableFiles(fileDataArray);
+                return;
+            }
+
+            const file = selectedFiles[idx];
+            progressText.textContent = '(' + (idx + 1) + '/' + total + ') ' + file.name + ' 읽는 중...';
+            progressBar.style.width = Math.round((idx / total) * 50) + '%';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result.split(',')[1];
+                fileDataArray.push({ filename: file.name, base64: base64 });
+                readNextFile(idx + 1);
+            };
+            reader.onerror = function() {
+                progressEl.style.display = 'none';
+                confirmBtn.disabled = false;
+                confirmBtn.style.opacity = '1';
+                appleAlert('오류', file.name + ' 파일을 읽는 중 오류가 발생했습니다.', null, false);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        readNextFile(0);
+    }
+
+    $(document).ready(function() {
+        loadingText.textContent = '명단을 불러오는 중...';
+        loadingOverlay.style.display = 'flex';
+
+        setTimeout(function() {
+            try {
+                if (schedule && teachers && teachers.length > 0) {
+                    renderTable();
+                } else {
+                    appleAlert('알림', '제외 설정을 할 교사가 없습니다.<br>먼저 교사 정보를 확인해주세요.', null, false);
+                }
+            } catch (e) {
+                appleAlert('UI 렌더링 오류', e.message, null, false);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }, 400);
+
+        $('#timetable-file-input').on('change', function() {
+            const input = this;
+            for (let i = 0; i < input.files.length; i++) {
+                const exists = selectedFiles.some(function(f) { return f.name === input.files[i].name; });
+                if (!exists) selectedFiles.push(input.files[i]);
+            }
+            updateFileList();
+        });
+
+        $('#file-drop-zone').on('click', function() {
+            $('#timetable-file-input').click();
+        });
+
+        $('#file-drop-zone').on('dragover', function(e) {
+            e.preventDefault();
+            $(this).css({ borderColor: '#3b82f6', background: '#eff6ff' });
+        }).on('dragleave', function() {
+            $(this).css({ borderColor: '#cbd5e1', background: '' });
+        }).on('drop', function(e) {
+            e.preventDefault();
+            $(this).css({ borderColor: '#cbd5e1', background: '' });
+            const files = e.originalEvent.dataTransfer.files;
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].name.match(/\.(xlsx|xls)$/i)) {
+                    const exists = selectedFiles.some(function(f) { return f.name === files[i].name; });
+                    if (!exists) selectedFiles.push(files[i]);
+                }
+            }
+            updateFileList();
+        });
+
+        $('#file-list').on('click', '.remove-file-btn', function() {
+            const idx = parseInt($(this).data('idx'));
+            selectedFiles.splice(idx, 1);
+            updateFileList();
+        });
+
+        $('#close-upload-btn, #cancel-upload-btn').on('click', function() {
+            closeUploadModal();
+        });
+
+        $('#upload-confirm-btn').on('click', function() {
+            if (!$(this).prop('disabled')) startUpload();
+        });
+
+        $('#load-timetable-btn').off('click').on('click', function() {
+            openUploadModal();
+        });
+
+        $('#save-btn').off('click').on('click', function() {
+            appleAlert('설정을 저장하시겠습니까?', '감독 제외 설정을 저장하고<br>다음 단계로 이동합니다.', function() {
+                executeSave();
+            }, true);
+        });
+    });
+    </script>
+</body>
+</html>

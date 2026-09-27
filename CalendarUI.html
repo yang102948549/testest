@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; 
+        }
+        .unavailable-state .period-checkbox {
+            filter: grayscale(100%) opacity(0.5); 
+        }
+        .unavailable-state .period-label-text {
+            color: #adb5bd;
+            text-decoration: line-through;
+        }
+        .unavailable-state.date-section {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0;
+        }
+
+        /* --- Custom Checkbox Color --- */
+        .period-checkbox {
+            accent-color: #3b82f6;
+        }
+
+        /* ==========================================================
+           Apple 시스템 스타일 커스텀 알림창 (이식 완료)
+           ========================================================== */
+        #apple-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 30000;
+        }
+        .apple-alert {
+            background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px;
+            overflow: hidden; display: flex; flex-direction: column; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+        }
+        @keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .apple-alert-content { padding: 20px 16px; text-align: center; }
+        .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+        .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+        .apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); }
+        .apple-btn { 
+            flex: 1; padding: 12px; font-size: 17px; background: transparent; border: none;
+            color: #007AFF; cursor: pointer; outline: none;
+        }
+        .apple-btn:active { background: rgba(0, 0, 0, 0.05); }
+        .apple-btn-bold { font-weight: 600; }
+        .apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-700 p-4 sm:p-6 lg:p-8">
+
+    <div class="max-w-7xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+        <div class="mb-8">
+            <h3 class="text-3xl font-bold text-slate-800">감독 가능 날짜 설정</h3>
+            <p class="mt-2 text-slate-500">다음 교사들의 <span class="font-bold text-blue-600">감독 가능 날짜 및 교시</span>를 체크해주세요.</p>
+        </div>
+        
+        <div id="teachers-container" class="space-y-8">
+            </div>
+
+        <div class="pt-8 mt-8 border-t border-slate-200">
+            <div class="flex justify-end gap-3">
+                <button id="cancel-btn" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors font-semibold">취소</button>
+                <button id="save-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-semibold">저장 및 다음 단계</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="loading-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 9999; flex-direction: column; justify-content: center; align-items: center;">
+        <svg class="animate-spin h-8 w-8 text-blue-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span id="loading-text" class="text-gray-700 font-medium text-lg"></span>
+    </div>
+
+    <div id="apple-modal-overlay">
+        <div class="apple-alert">
+            <div class="apple-alert-content">
+                <div id="apple-title" class="apple-alert-title"></div>
+                <div id="apple-text" class="apple-alert-text"></div>
+            </div>
+            <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+        </div>
+    </div>
+
+<script>
+   // --- Data passed from Google Apps Script ---
+    const teachers = JSON.parse(<?= teachers ?>);
+    const examDates = JSON.parse(<?= examDates ?>);
+    const periodCount = <?= periodCount ?>;
+    const teacherSelections = {}; 
+
+    // --- 애플 스타일 알림창 제어 함수 ---
+    function appleAlert(title, text, onConfirm = null, showCancel = true) {
+        $('#apple-title').text(title);
+        $('#apple-text').html(text);
+        const $btns = $('#apple-buttons-container').empty();
+        
+        if (showCancel) {
+            $btns.append(`<button id="apple-btn-cancel" class="apple-btn">취소</button>`);
+            $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">확인</button>`);
+            $('#apple-btn-cancel').on('click', () => $('#apple-modal-overlay').hide());
+        } else {
+            $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold" style="width: 100%;">확인</button>`);
+        }
+
+        $('#apple-btn-confirm').on('click', () => {
+            $('#apple-modal-overlay').hide();
+            if(onConfirm) onConfirm();
+        });
+        
+        $('#apple-modal-overlay').css('display', 'flex');
+    }
+
+    function formatYYYYMMDD(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseSavedSelections(text) {
+        const selections = {};
+        if (!text || text.trim() === '') return selections;
+        if (text.trim() === '전체 불가') {
+            selections['all-unavailable'] = true;
+            return selections;
+        }
+        const parts = text.split('/').map(p => p.trim());
+        parts.forEach(part => {
+            const match = part.match(/(\d{4}-\d{2}-\d{2})\s*\(([\d,]+)\)/);
+            if (match) {
+                const date = match[1];
+                const periods = match[2].split(',').map(p => parseInt(p));
+                selections[date] = periods;
+            }
+        });
+        return selections;
+    }
+
+    function setAllUnavailable(teacherIndex) {
+        const teacher = teachers[teacherIndex];
+        teacherSelections[teacher.rowIndex] = { 'all-unavailable': true };
+        
+        const $teacherSection = $(`.teacher-section[data-teacher-index="${teacherIndex}"]`);
+        $teacherSection.find('.period-checkbox').prop('checked', false).prop('disabled', true);
+        $teacherSection.find('.date-section, .period-label').addClass('unavailable-state'); 
+    }
+
+    function initializeTeacherSelection(teacherIndex) {
+        const teacher = teachers[teacherIndex];
+        teacherSelections[teacher.rowIndex] = {}; 
+        
+        const $teacherSection = $(`.teacher-section[data-teacher-index="${teacherIndex}"]`);
+        $teacherSection.find('.period-checkbox').prop('checked', false).prop('disabled', false); 
+        $teacherSection.find('.date-section, .period-label').removeClass('unavailable-state'); 
+    }
+    
+    function executeSave() {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+        
+        loadingText.textContent = '선택하신 감독 가능 날짜를 저장하고 있습니다...';
+        loadingOverlay.style.display = 'flex';
+
+        const dataToSave = [];
+        for (const rowIndex in teacherSelections) {
+            let selectionStr = "";
+            const selection = teacherSelections[rowIndex];
+            if (selection['all-unavailable']) {
+                selectionStr = '전체 불가';
+            } else {
+                let entries = [];
+                const sortedDates = Object.keys(selection).sort();
+                for (const date of sortedDates) {
+                    if (Array.isArray(selection[date]) && selection[date].length > 0) {
+                        const sortedPeriods = selection[date].sort((a, b) => a - b);
+                        entries.push(`${date}(${sortedPeriods.join(',')})`);
+                    }
+                }
+                selectionStr = entries.join(' / ');
+            }
+            dataToSave.push({ rowIndex: parseInt(rowIndex), selections: selectionStr });
+        }
+        
+        google.script.run
+            .withSuccessHandler((success) => {
+                loadingOverlay.style.display = 'none';
+                if(success){
+                    appleAlert('저장 완료', '성공적으로 저장되었습니다.<br>다음 단계로 이동합니다.', () => {
+                        google.script.run.showExclusionDialog();
+                    }, false);
+                } else {
+                    appleAlert('저장 실패', '저장에 실패했습니다.<br>서버 로그를 확인해주세요.', null, false);
+                }
+            })
+            .withFailureHandler((err) => {
+                loadingOverlay.style.display = 'none';
+                appleAlert('오류 발생', '저장 중 오류가 발생했습니다.<br>' + err.message, null, false);
+            })
+            .saveAllAvailableDates(JSON.stringify(dataToSave));
+    }
+
+    // --- Document Ready ---
+    $(document).ready(function() {
+        if (typeof google === 'undefined') {
+            window.google = {
+                script: {
+                    run: {
+                        withSuccessHandler: function(callback) { this.successCallback = callback; return this; },
+                        withFailureHandler: function(callback) { this.failureCallback = callback; return this; },
+                        saveAllAvailableDates: function(data) {
+                            console.log("Called saveAllAvailableDates with:", data);
+                            if (this.successCallback) { setTimeout(() => this.successCallback(true), 1000); }
+                        },
+                        showExclusionDialog: function() { console.log("Called showExclusionDialog. Closing window."); },
+                        host: { close: function() { alert("창이 닫혔습니다. (데모)"); } }
+                    }
+                }
+            };
+        }
+
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingText = document.getElementById('loading-text');
+
+        loadingText.textContent = '교사 정보를 불러오는 중...';
+        loadingOverlay.style.display = 'flex';
+        
+        setTimeout(function() {
+            try {
+                const teachersContainer = $('#teachers-container');
+                if (!teachers || teachers.length === 0) {
+                    teachersContainer.html('<p class="text-center text-slate-500">설정할 교사 정보가 없습니다.</p>');
+                    return;
+                }
+
+                teachers.forEach(function(teacher, teacherIndex) {
+                    teacherSelections[teacher.rowIndex] = parseSavedSelections(teacher.savedSelections);
+
+                    let dateGridHtml = '';
+                    examDates.forEach(dateStr => {
+                        const formattedDate = formatYYYYMMDD(dateStr);
+                        const isDisabled = teacherSelections[teacher.rowIndex]['all-unavailable'];
+
+                        let periodsHtml = '';
+                        for (let p = 1; p <= periodCount; p++) {
+                            const isChecked = !isDisabled && teacherSelections[teacher.rowIndex]?.[formattedDate]?.includes(p);
+                            periodsHtml += `
+                                <label class="flex items-center space-x-2.5 period-label cursor-pointer ${isDisabled ? 'unavailable-state' : 'hover:bg-slate-200/50 rounded-md'}">
+                                    <input type="checkbox" 
+                                        class="period-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer" 
+                                        data-teacher-index="${teacherIndex}" 
+                                        data-date="${formattedDate}" 
+                                        data-period="${p}" 
+                                        ${isChecked ? 'checked' : ''}
+                                        ${isDisabled ? 'disabled' : ''}> 
+                                    <span class="period-label-text text-base select-none">${p}교시</span>
+                                </label>`;
+                        }
+
+                        dateGridHtml += `
+                            <div class="date-section bg-slate-50/70 rounded-xl p-4 ${isDisabled ? 'unavailable-state' : ''}">
+                                <strong class="font-semibold text-slate-700 block mb-3">${formattedDate}</strong>
+                                <div class="space-y-2">${periodsHtml}</div>
+                            </div>`;
+                    });
+
+                    let teacherSectionHtml = `
+                        <div class="teacher-section bg-white rounded-2xl shadow-md border border-slate-200/80 p-6" data-teacher-index="${teacherIndex}" data-row-index="${teacher.rowIndex}">
+                            <div class="flex flex-wrap justify-between items-center gap-y-3 mb-5 border-b border-slate-200 pb-4">
+                                <h4 class="font-bold text-xl text-slate-800">
+                                    ${teacher.name}
+                                    <span class="text-sm text-slate-500 font-normal ml-2">(사유: ${teacher.reason || '없음'})</span>
+                                </h4>
+                                <div class="flex gap-2">
+                                    <button class="px-5 py-2 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors text-base font-medium" onclick="initializeTeacherSelection(${teacherIndex})">초기화</button>
+                                    <button class="px-5 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-base font-medium" onclick="setAllUnavailable(${teacherIndex})">전체 불가</button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5">
+                                ${dateGridHtml}
+                            </div>
+                        </div>`;
+                    teachersContainer.append(teacherSectionHtml);
+                });
+
+                // --- Event Listeners ---
+                $('.period-checkbox').on('change', function() {
+                    const teacherIndex = $(this).data('teacher-index');
+                    const date = $(this).data('date');
+                    const period = parseInt($(this).data('period'));
+                    const teacher = teachers[teacherIndex];
+
+                    if (teacherSelections[teacher.rowIndex]['all-unavailable']) {
+                        delete teacherSelections[teacher.rowIndex]['all-unavailable'];
+                        const $teacherSection = $(`.teacher-section[data-teacher-index="${teacherIndex}"]`);
+                        $teacherSection.find('.date-section, .period-label').removeClass('unavailable-state');
+                        $teacherSection.find('.period-checkbox').prop('disabled', false);
+                    }
+
+                    if (!teacherSelections[teacher.rowIndex][date]) {
+                        teacherSelections[teacher.rowIndex][date] = [];
+                    }
+
+                    if ($(this).is(':checked')) {
+                        if (!teacherSelections[teacher.rowIndex][date].includes(period)) {
+                            teacherSelections[teacher.rowIndex][date].push(period);
+                        }
+                    } else {
+                        teacherSelections[teacher.rowIndex][date] = teacherSelections[teacher.rowIndex][date].filter(p => p !== period);
+                    }
+                    teacherSelections[teacher.rowIndex][date].sort((a, b) => a - b);
+                });
+
+                // 애플 모달 연동: 저장 버튼
+                $('#save-btn').on('click', function() {
+                    appleAlert('저장하시겠습니까?', '입력한 내용으로 감독 가능 날짜를 저장합니다.', () => {
+                        executeSave();
+                    }, true);
+                });
+                
+                // 애플 모달 연동: 취소 버튼
+                $('#cancel-btn').on('click', function() {
+                    appleAlert('취소하시겠습니까?', '변경사항이 저장되지 않고 창이 닫힙니다.', () => {
+                        google.script.host.close();
+                    }, true);
+                });
+
+            } catch (e) {
+                appleAlert('UI 렌더링 오류', e.message, null, false);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }, 400); // 400ms 지연
+    });
+</script>
+</body>
+</html>

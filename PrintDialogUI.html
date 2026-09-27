@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    
+    <style>
+        /* 기본 폰트 및 커스텀 스타일 */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans KR", sans-serif; }
+        
+        /* 체크박스 선택 시 스타일 */
+        .peer:checked ~ div {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #eff6ff; /* blue-50 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transform: translateY(-2px);
+        }
+        .peer:checked ~ div span {
+            color: #1d4ed8; /* blue-700 */
+        }
+        .peer:checked ~ div .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* 라디오 버튼 선택 시 스타일 */
+        .radio-peer:checked + label {
+            background-color: #ffffff;
+            color: #3b82f6; /* blue-500 */
+            font-weight: 700;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        /* ==========================================================
+           Apple 시스템 스타일 커스텀 알림창 (이식 완료)
+           ========================================================== */
+        #apple-modal-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); 
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 30000;
+        }
+        .apple-alert {
+            background: rgba(255, 255, 255, 0.85); width: 270px; border-radius: 14px;
+            overflow: hidden; display: flex; flex-direction: column; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); animation: applePop 0.2s ease-out;
+        }
+        @keyframes applePop { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .apple-alert-content { padding: 20px 16px; text-align: center; }
+        .apple-alert-title { font-weight: 600; font-size: 17px; margin-bottom: 4px; letter-spacing: -0.4px; }
+        .apple-alert-text { font-size: 13px; line-height: 1.4; color: #000; }
+        .apple-alert-buttons { display: flex; border-top: 0.5px solid rgba(60, 60, 67, 0.2); }
+        .apple-btn { 
+            flex: 1; padding: 12px; font-size: 17px; background: transparent; border: none;
+            color: #007AFF; cursor: pointer; outline: none;
+        }
+        .apple-btn:active { background: rgba(0, 0, 0, 0.05); }
+        .apple-btn-bold { font-weight: 600; }
+        .apple-btn-border { border-left: 0.5px solid rgba(60, 60, 67, 0.2); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700 p-4 sm:p-6 lg:p-8">
+    <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+        
+        <div class="mb-12">
+            <h1 class="text-2xl font-bold text-slate-800">일자별 감독 시간표 생성</h1>
+            <p class="mt-2 text-slate-500">생성할 날짜와 양식을 선택한 후, 생성 버튼을 눌러주세요.</p>
+        </div>
+
+        <div class="space-y-10">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">생성할 날짜 선택</h3>
+                <div class="checkbox-group grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" id="date-options">
+                </div>
+            </div>
+
+            <div class="border-t border-slate-200 pt-10">
+                <h3 class="text-lg font-semibold text-slate-800 mb-4">생성할 양식 선택</h3>
+                <div class="flex items-center justify-around p-2 rounded-xl bg-slate-100 max-w-md">
+                    <div class="text-center flex-1">
+                        <input type="radio" id="type-combined" name="sheetType" value="combined" class="hidden radio-peer" checked>
+                        <label for="type-combined" class="block cursor-pointer py-2.5 px-4 rounded-lg text-slate-600 transition-all duration-300 text-sm sm:text-base">통합</label>
+                    </div>
+                    <div class="text-center flex-1">
+                        <input type="radio" id="type-teacher" name="sheetType" value="teacherOnly" class="hidden radio-peer">
+                        <label for="type-teacher" class="block cursor-pointer py-2.5 px-4 rounded-lg text-slate-600 transition-all duration-300 text-sm sm:text-base">교사별</label>
+                    </div>
+                    <div class="text-center flex-1">
+                        <input type="radio" id="type-room" name="sheetType" value="roomOnly" class="hidden radio-peer">
+                        <label for="type-room" class="block cursor-pointer py-2.5 px-4 rounded-lg text-slate-600 transition-all duration-300 text-sm sm:text-base">고사실별</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pt-8 border-t border-slate-200">
+                <button id="generate-btn" onclick="generateSheets()" class="w-full py-3 px-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg text-lg font-bold shadow-md hover:shadow-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 ease-in-out focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    일자별 시트 생성
+                </button>
+            </div>
+        </div>
+        
+        <div id="loader" class="hidden flex-col items-center justify-center pt-6">
+            <div class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span id="loader-text" class="text-slate-600 font-medium text-base">처리 중...</span>
+            </div>
+        </div>
+
+        <div id="message-box" class="hidden fixed top-5 left-1/2 -translate-x-1/2 bg-red-500 text-white py-2 px-5 rounded-lg shadow-xl text-sm z-50">
+            <span id="message-text"></span>
+        </div>
+    </div>
+
+    <div id="apple-modal-overlay">
+        <div class="apple-alert">
+            <div class="apple-alert-content">
+                <div id="apple-title" class="apple-alert-title"></div>
+                <div id="apple-text" class="apple-alert-text"></div>
+            </div>
+            <div class="apple-alert-buttons" id="apple-buttons-container"></div>
+        </div>
+    </div>
+
+    <script>
+        const examDates = JSON.parse('<?= examDates ?>' || '[]');
+
+        const optionsContainer = document.getElementById('date-options');
+        const generateBtn = document.getElementById('generate-btn');
+        const loader = document.getElementById('loader');
+        const loaderText = document.getElementById('loader-text');
+        const messageBox = document.getElementById('message-box');
+        const messageText = document.getElementById('message-text');
+
+        // --- 애플 스타일 알림창 제어 함수 (onCancel, 버튼명 커스텀 지원) ---
+        function appleAlert(title, text, onConfirm = null, showCancel = true, onCancel = null, confirmBtnText = '확인', cancelBtnText = '취소') {
+            $('#apple-title').text(title);
+            $('#apple-text').html(text);
+            const $btns = $('#apple-buttons-container').empty();
+            
+            if (showCancel) {
+                $btns.append(`<button id="apple-btn-cancel" class="apple-btn">${cancelBtnText}</button>`);
+                $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold apple-btn-border">${confirmBtnText}</button>`);
+                
+                $('#apple-btn-cancel').on('click', () => {
+                    $('#apple-modal-overlay').hide();
+                    if (onCancel) onCancel();
+                });
+            } else {
+                $btns.append(`<button id="apple-btn-confirm" class="apple-btn apple-btn-bold" style="width: 100%;">${confirmBtnText}</button>`);
+            }
+
+            $('#apple-btn-confirm').on('click', () => {
+                $('#apple-modal-overlay').hide();
+                if(onConfirm) onConfirm();
+            });
+            
+            $('#apple-modal-overlay').css('display', 'flex');
+        }
+
+        function formatDateToMD(dateString) {
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const date = new Date(dateString);
+            return `${date.getMonth() + 1}.${date.getDate()}(${days[date.getDay()]})`;
+        }
+
+        examDates.forEach(date => {
+            const id = 'date-' + date;
+            const labelText = formatDateToMD(date);
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.innerHTML = `
+                <label for="${id}" class="cursor-pointer">
+                    <input type="checkbox" id="${id}" name="selectedDates" value="${date}" class="sr-only peer">
+                    <div class="relative text-center p-4 border-2 border-slate-200 rounded-lg transition-all duration-200 hover:border-blue-400 hover:bg-blue-50">
+                        <span class="text-base font-semibold text-slate-700">${labelText}</span>
+                        <div class="check-icon absolute top-1.5 right-1.5 text-blue-500 opacity-0 transform scale-75 transition-all duration-200">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                </label>
+            `;
+            optionsContainer.appendChild(checkboxWrapper);
+        });
+
+        function showMessage(message, duration = 3000) {
+            messageText.textContent = message;
+            messageBox.classList.remove('hidden');
+            setTimeout(() => { messageBox.classList.add('hidden'); }, duration);
+        }
+
+        function showLoader(message = '처리 중...') {
+            generateBtn.parentElement.classList.add('hidden');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            loaderText.textContent = message;
+        }
+
+        function hideLoader() {
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+            generateBtn.parentElement.classList.remove('hidden');
+        }
+
+        function generateSheets() {
+            const selectedDates = Array.from(document.querySelectorAll('input[name="selectedDates"]:checked')).map(cb => cb.value);
+            const sheetType = document.querySelector('input[name="sheetType"]:checked').value;
+            
+            if (selectedDates.length === 0) {
+                appleAlert('알림', '날짜를 하나 이상 선택해주세요.', null, false);
+                return;
+            }
+            
+            showLoader('시트 생성 중...');
+
+            if (typeof google !== 'undefined' && google.script) {
+                google.script.run
+                    .withSuccessHandler(success => {
+                        hideLoader();
+                        if (success) {
+                            confirmCreateNewSpreadsheet(selectedDates, sheetType);
+                        } else {
+                            appleAlert('오류', '시트 생성에 실패했습니다.', null, false);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        hideLoader();
+                        appleAlert('오류 발생', '시트 생성 오류:<br>' + err.message, null, false);
+                    })
+                    .generateDailySheets(selectedDates, sheetType);
+            }
+        }
+
+        function confirmCreateNewSpreadsheet(selectedDates, sheetType) {
+            appleAlert('생성 완료', '공유 및 안내용 시트를<br>새로 생성하시겠습니까?', 
+                () => { // 예
+                    showLoader('새 스프레드시트 준비 중...');
+                    openNewSpreadsheet(selectedDates, sheetType);
+                }, 
+                true, 
+                () => { // 아니오
+                    google.script.host.close();
+                },
+                '예', '아니오'
+            );
+        }
+
+        function openNewSpreadsheet(selectedDates, sheetType) {
+            if (typeof google !== 'undefined' && google.script) {
+                google.script.run
+                    .withSuccessHandler(result => {
+                        hideLoader();
+                        if (result && result.url) {
+                            // "새 창 열기" 버튼과 "닫기" 버튼을 애플 스타일로 구현
+                            appleAlert('파일 생성 완료', '새로운 스프레드시트 파일이<br>생성되었습니다.', 
+                                () => {
+                                    window.open(result.url, '_blank');
+                                    google.script.host.close();
+                                }, 
+                                true, 
+                                () => {
+                                    google.script.host.close();
+                                },
+                                '새 창에서 열기', '닫기'
+                            );
+                        } else {
+                            appleAlert('오류', '새 스프레드시트 링크를<br>생성할 수 없습니다.', null, false);
+                        }
+                    })
+                    .withFailureHandler(err => {
+                        hideLoader();
+                        appleAlert('오류 발생', '새 스프레드시트 생성 오류:<br>' + err.message, null, false);
+                    })
+                    .createNewSpreadsheetFromSheets(selectedDates, sheetType);
+            }
+        }
+    </script>
+</body>
+</html>
