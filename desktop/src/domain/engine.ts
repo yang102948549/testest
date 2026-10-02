@@ -1,12 +1,5 @@
-import {
-  Assignment,
-  ExamDocument,
-  Result,
-  Slot,
-  Teacher,
-  fingerprint,
-  key,
-} from "./model";
+import loadHighs, { type Highs, type InitOptions } from "highs";
+import { Assignment, ExamDocument, Result, fingerprint, key } from "./model";
 import {
   forbidden,
   isDesignated,
@@ -17,258 +10,392 @@ import {
   validate,
   weight,
 } from "./rules";
-export const ENGINE_VERSION = "1.0.1";
-const less = (a: number[], b: number[]) => {
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return a[i] < b[i];
-  }
-  return false;
-};
-function random(seed: number) {
-  let a = seed | 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
 
-export function solve(
+export const ENGINE_VERSION = "2.0.0-highs";
+let runtime: Promise<Highs> | undefined;
+/** The Worker supplies a bundled WASM URL; Node tests use the package loader. */
+export function initializeSolver(options?: InitOptions) {
+  return (runtime ??= loadHighs(options).catch((error) => {
+    runtime = undefined;
+    throw error;
+  }));
+}
+type Term = [number, number];
+type Edge = {
+  si: number;
+  ti: number;
+  points: number;
+  designated: boolean;
+  miss: number;
+};
+const phaseNames = [
+  "지정배치",
+  "빈자리 최소화",
+  "자리 선호",
+  "점수 격차",
+  "평균 편차",
+];
+const dot = (terms: Term[], x: Float64Array) =>
+  terms.reduce((n, [i, v]) => n + v * x[i], 0);
+
+/** Lexicographic MILP. Counts are advisory only; never weaken forbidden(). */
+export async function solve(
   d: ExamDocument,
   onProgress?: (n: number) => void,
-): Result {
-  const slots = slotsFor(d),
-    subjects = subjectMap(d),
-    teachers = d.teachers;
-  const eligible = slots.map((s) =>
-    teachers
-      .map((t, i) => (!forbidden(d, t, s, subjects).length ? i : -1))
-      .filter((i) => i >= 0),
-  );
-  const req = teachers.map((t) => new Set(requiredTimes(d, t, slots).map(key)));
-  const designated = teachers.map(isDesignated);
-  const runs = slots.length > 500 ? 4 : 12;
-  let best: number[] | undefined, bestMetric: number[] | undefined;
-  const toAssignments = (a: number[]): Assignment[] =>
-    slots.map((s, i) => ({
-      slotId: s.id,
-      teacherId: a[i] < 0 ? null : teachers[a[i]].id,
-    }));
-  const metric = (a: number[]) => {
-    let missing = 0,
-      empty = 0,
-      over = 0,
-      repetition = 0,
-      dailyPenalty = 0,
-      consecutive = 0,
-      placementMiss = 0,
-      rolePenalty = 0;
-    const lists = teachers.map(() => [] as Slot[]);
-    a.forEach((t, i) => {
-      if (t < 0) empty++;
-      else lists[t].push(slots[i]);
-    });
-    const scores: number[] = [];
-    lists.forEach((ss, ti) => {
-      const times = new Set(ss.map(key));
-      for (const k of req[ti]) if (!times.has(k)) missing++;
-      const rooms = new Map<string, number>();
-      const days = new Map<string, { hall: number; cls: number }>();
-      for (const s of ss) {
-        rooms.set(s.roomId, (rooms.get(s.roomId) ?? 0) + 1);
-        const day = days.get(s.date) ?? { hall: 0, cls: 0 };
-        s.kind === "hallway" ? day.hall++ : day.cls++;
-        days.set(s.date, day);
-        if (times.has(`${s.date}/${s.period - 1}`)) consecutive++;
-        // A designated teacher's seat preference outranks workload balance.
-        if (designated[ti]) placementMiss += placementCost(teachers[ti], s);
-        else rolePenalty += placementCost(teachers[ti], s);
-      }
-      for (const n of rooms.values()) repetition += (n * (n - 1)) / 2;
-      for (const v of days.values()) {
-        dailyPenalty += (v.hall + v.cls) ** 2;
-        if (d.settings.mode === "general" && !designated[ti]) {
-          over += Math.max(0, v.hall - d.settings.maxHallway);
-          if (!d.settings.allowThird && !v.hall) over += Math.max(0, v.cls - 2);
-        }
-      }
-      if (d.settings.mode === "general" && !designated[ti])
-        over += Math.max(
-          0,
-          ss.filter((s) => s.kind !== "hallway").length -
-            d.settings.maxClassroom,
-        );
-      if (teachers[ti].role === "normal")
-        scores.push(ss.reduce((n, s) => n + weight(d, s), 0));
-    });
-    const mean = scores.reduce((a, b) => a + b, 0) / (scores.length || 1),
-      variance = scores.reduce((n, x) => n + (x - mean) ** 2, 0);
-    return [
-      missing,
-      empty,
-      over,
-      placementMiss,
-      variance,
-      dailyPenalty,
-      rolePenalty,
-      repetition,
-      consecutive,
-    ];
+  options: { timeLimitMs?: number } = {},
+): Promise<Result> {
+  const started = performance.now();
+  let lastProgress = 0;
+  const progress = (value: number) => {
+    lastProgress = Math.max(lastProgress, value);
+    onProgress?.(lastProgress);
   };
-  for (let run = 0; run < runs; run++) {
-    const rng = random(d.settings.seed + run * 7919),
-      a = slots.map(() => -1),
-      lists = teachers.map(() => new Set<number>());
-    const set = (si: number, ti: number) => {
-      const old = a[si];
-      if (old >= 0) lists[old].delete(si);
-      a[si] = ti;
-      if (ti >= 0) lists[ti].add(si);
-    };
-    const limitOK = (ti: number, si: number) => {
-      if (d.settings.mode === "mainSub") return true;
-      const s = slots[si],
-        ss = [...lists[ti]].map((i) => slots[i]);
-      if (s.kind === "hallway")
-        return (
-          ss.filter((x) => x.date === s.date && x.kind === "hallway").length <
-          d.settings.maxHallway
-        );
-      if (
-        ss.filter((x) => x.kind !== "hallway").length >= d.settings.maxClassroom
-      )
-        return false;
-      const today = ss.filter((x) => x.date === s.date);
-      return (
-        d.settings.allowThird ||
-        today.some((x) => x.kind === "hallway") ||
-        today.filter((x) => x.kind !== "hallway").length < 2
-      );
-    };
-    const tie = slots.map(() => teachers.map(() => rng()));
-    const ranking = (ti: number, si: number) => {
-      const ss = [...lists[ti]].map((i) => slots[i]),
-        s = slots[si],
-        t = teachers[ti];
-      const required =
-        req[ti].has(key(s)) && !ss.some((x) => key(x) === key(s));
-      return [
-        required ? -1 : 0,
-        limitOK(ti, si) ? 0 : 1,
-        ss.reduce((n, x) => n + weight(d, x), 0),
-        ss.filter((x) => x.date === s.date).length,
-        placementCost(t, s),
-        ss.filter((x) => x.roomId === s.roomId).length,
-        tie[si][ti],
-      ];
-    };
-    const order = slots
-      .map((_, i) => i)
-      .sort(
-        (i, j) =>
-          eligible[i].length - eligible[j].length ||
-          key(slots[i]).localeCompare(key(slots[j])) ||
-          i - j,
-      );
-    // Augmenting paths repair greedy choices within a period. Never drop an occupied slot.
-    const place = (
-      si: number,
-      strict: boolean,
-      visited: Set<number>,
-      depth: number,
-    ): boolean => {
-      if (depth > Math.min(teachers.length, 50) || visited.has(si))
-        return false;
-      visited.add(si);
-      const candidates = [...eligible[si]].sort((x, y) => {
-        const rx = ranking(x, si),
-          ry = ranking(y, si);
-        return less(rx, ry) ? -1 : less(ry, rx) ? 1 : 0;
+  const budget = Math.max(0, options.timeLimitMs ?? 10_000);
+  const deadline = started + budget;
+  const slots = slotsFor(d),
+    subjects = subjectMap(d);
+  const designated = d.teachers.map(isDesignated);
+  const normal = d.teachers.flatMap((t, i) => (t.role === "normal" ? [i] : []));
+  const scale =
+    (d.settings.mode === "mainSub"
+      ? 1
+      : Math.max(d.settings.classroomWeight, d.settings.hallwayWeight)) || 1;
+  const weights = slots.map((s) => weight(d, s) / scale);
+  // Never silently discard a positive user weight below numerical resolution.
+  if (weights.some((w) => w > 0 && w < 1e-8))
+    throw new Error(
+      "교실·복도 가중치의 비율 차이가 너무 큽니다. 두 값의 비율을 1억 배 이내로 조정해 주세요.",
+    );
+  const edges: Edge[] = [],
+    bySlot = slots.map(() => [] as number[]);
+  const byTeacher = d.teachers.map(() => [] as number[]);
+  const byTime = new Map<string, number[]>();
+  slots.forEach((s, si) =>
+    d.teachers.forEach((t, ti) => {
+      if (forbidden(d, t, s, subjects).length) return;
+      const ei = edges.length;
+      edges.push({
+        si,
+        ti,
+        points: weights[si],
+        designated: designated[ti],
+        miss: designated[ti] ? placementCost(t, s) : 0,
       });
-      for (const ti of candidates) {
-        const conflict = [...lists[ti]].find(
-          (i) => key(slots[i]) === key(slots[si]),
-        );
-        if (conflict === undefined) {
-          if (!strict || limitOK(ti, si)) {
-            set(si, ti);
-            return true;
-          }
-          continue;
-        }
-        if (visited.has(conflict)) continue;
-        // Remove before checking aggregate limits; rollback every unsuccessful path.
-        set(conflict, -1);
-        if (!strict || limitOK(ti, si)) {
-          set(si, ti);
-          if (place(conflict, strict, visited, depth + 1)) return true;
-          set(si, -1);
-        }
-        set(conflict, ti);
-      }
-      return false;
-    };
-    // Designated periods first, each on the seat the teacher prefers.
-    teachers.forEach((t, ti) => {
-      for (const k of req[ti]) {
-        const free = order.filter(
-          (si) =>
-            a[si] < 0 && key(slots[si]) === k && eligible[si].includes(ti),
-        );
-        free.sort(
-          (x, y) =>
-            placementCost(t, slots[x]) - placementCost(t, slots[y]) ||
-            tie[x][ti] - tie[y][ti],
-        );
-        if (free.length) set(free[0], ti);
-      }
-    });
-    for (const strict of [true, false])
-      for (const si of order) if (a[si] < 0) place(si, strict, new Set(), 0);
-    let current = metric(a);
-    // Deterministic bounded local repair: fill required periods and balance workload.
-    const attempts =
-      slots.length > 500
-        ? 350
-        : Math.min(1800, Math.max(250, slots.length * 18));
-    for (let n = 0; n < attempts && slots.length; n++) {
-      const si = Math.floor(rng() * slots.length),
-        candidates = eligible[si];
-      if (!candidates.length) continue;
-      const ti = candidates[Math.floor(rng() * candidates.length)],
-        old = a[si];
-      if (ti === old) continue;
-      const conflict = [...lists[ti]].find(
-        (i) => key(slots[i]) === key(slots[si]),
-      );
-      if (
-        conflict !== undefined &&
-        (old < 0 || !eligible[conflict].includes(old))
-      )
-        continue;
-      set(si, ti);
-      if (conflict !== undefined) set(conflict, old);
-      const m = metric(a);
-      if (less(m, current)) current = m;
-      else {
-        if (conflict !== undefined) set(conflict, ti);
-        set(si, old);
+      bySlot[si].push(ei);
+      byTeacher[ti].push(ei);
+      const k = `${ti}/${key(s)}`;
+      if (!byTime.has(k)) byTime.set(k, []);
+      byTime.get(k)!.push(ei);
+    }),
+  );
+  // Period matching supplies a valid incumbent even when optimization times out.
+  const seedPlan = slots.map(() => -1),
+    occupied = new Map<string, number>();
+  const seedRank = (ei: number) => {
+    const e = edges[ei];
+    return (
+      (Math.imul(e.ti + 1, 1103515245) ^
+        Math.imul(e.si + 1, 12345) ^
+        d.settings.seed) >>>
+      0
+    );
+  };
+  bySlot.forEach((list) =>
+    list.sort(
+      (a, b) =>
+        Number(edges[b].designated) - Number(edges[a].designated) ||
+        edges[a].miss - edges[b].miss ||
+        seedRank(a) - seedRank(b),
+    ),
+  );
+  function augment(si: number, seen: Set<number>): boolean {
+    if (seen.has(si)) return false;
+    seen.add(si);
+    for (const ei of bySlot[si]) {
+      const k = `${edges[ei].ti}/${key(slots[si])}`;
+      const prior = occupied.get(k);
+      if (prior === undefined || augment(prior, seen)) {
+        occupied.set(k, si);
+        seedPlan[si] = ei;
+        return true;
       }
     }
-    if (!bestMetric || less(current, bestMetric)) {
-      best = [...a];
-      bestMetric = current;
-    }
-    onProgress?.(Math.round(((run + 1) / runs) * 100));
+    return false;
   }
-  const assignments = toAssignments(best ?? slots.map(() => -1));
+  slots
+    .map((_, i) => i)
+    .sort((a, b) => bySlot[a].length - bySlot[b].length || a - b)
+    .forEach((si) => augment(si, new Set()));
+  const ne = edges.length,
+    count = normal.length;
+  const scoreCols = new Map(normal.map((ti, i) => [ti, ne + i]));
+  const meanCol = ne + count,
+    minCol = meanCol + 1,
+    maxCol = meanCol + 2;
+  const absStart = meanCol + 3,
+    nc = absStart + count;
+  const upperScore = new Set(slots.map(key)).size;
+  if (!Number.isFinite(upperScore * scale * Math.max(1, count)))
+    throw new Error(
+      "가중치가 너무 커서 누적 점수를 계산할 수 없습니다. 가중치 크기를 줄여 주세요.",
+    );
+  const canonical = (plan: number[]) => {
+    const x = new Float64Array(nc);
+    for (const ei of plan)
+      if (ei >= 0) {
+        x[ei] = 1;
+        const sc = scoreCols.get(edges[ei].ti);
+        if (sc !== undefined) x[sc] += edges[ei].points;
+      }
+    const points = normal.map((ti) => x[scoreCols.get(ti)!]);
+    x[meanCol] = points.reduce((a, b) => a + b, 0) / (count || 1);
+    x[minCol] = points.length ? Math.min(...points) : 0;
+    x[maxCol] = points.length ? Math.max(...points) : 0;
+    points.forEach((p, i) => (x[absStart + i] = Math.abs(p - x[meanCol])));
+    return x;
+  };
+  let incumbent = canonical(seedPlan);
+  const objectives: Term[][] = [
+    edges.flatMap((e, i): Term[] => (e.designated ? [[i, -1]] : [])),
+    edges.map((_, i) => [i, -1]),
+    edges.flatMap((e, i): Term[] => (e.miss ? [[i, e.miss]] : [])),
+    [
+      [maxCol, 1],
+      [minCol, -1],
+    ],
+    normal.map((_, i) => [absStart + i, 1]),
+  ];
+  const required = d.teachers.reduce(
+    (n, t) => n + new Set(requiredTimes(d, t, slots).map(key)).size,
+    0,
+  );
+  const lowerBounds = [-required, -slots.length, 0, 0, 0];
+  const completed: string[] = [];
+  let stopReason: "time-limit" | "solver-limit" | undefined;
+  let interruptedPhase: string | undefined;
+  const starts = [0],
+    indices: number[] = [],
+    values: number[] = [],
+    lo: number[] = [],
+    hi: number[] = [];
+  const row = (terms: Term[], lower: number, upper: number) => {
+    for (const [i, v] of terms)
+      if (v !== 0) {
+        indices.push(i);
+        values.push(v);
+      }
+    starts.push(indices.length);
+    lo.push(lower);
+    hi.push(upper);
+  };
+  bySlot.forEach((list) =>
+    row(
+      list.map((i) => [i, 1]),
+      0,
+      1,
+    ),
+  );
+  byTime.forEach((list) =>
+    row(
+      list.map((i) => [i, 1]),
+      0,
+      1,
+    ),
+  );
+  normal.forEach((ti, i) => {
+    const sc = scoreCols.get(ti)!;
+    row(
+      [[sc, 1], ...byTeacher[ti].map((ei): Term => [ei, -edges[ei].points])],
+      0,
+      0,
+    );
+    row(
+      [
+        [sc, 1],
+        [minCol, -1],
+      ],
+      0,
+      Infinity,
+    );
+    row(
+      [
+        [sc, 1],
+        [maxCol, -1],
+      ],
+      -Infinity,
+      0,
+    );
+    row(
+      [
+        [sc, 1],
+        [meanCol, -1],
+        [absStart + i, -1],
+      ],
+      -Infinity,
+      0,
+    );
+    row(
+      [
+        [sc, -1],
+        [meanCol, 1],
+        [absStart + i, -1],
+      ],
+      -Infinity,
+      0,
+    );
+  });
+  row(
+    [
+      [meanCol, count || 1],
+      ...normal.map((ti): Term => [scoreCols.get(ti)!, -1]),
+    ],
+    0,
+    0,
+  );
+  progress(5);
+  const highs = await initializeSolver();
+  const model = highs.createModel({
+    numCols: nc,
+    numRows: lo.length,
+    colCost: new Float64Array(nc),
+    colLower: new Float64Array(nc),
+    colUpper: Array.from({ length: nc }, (_, i) => (i < ne ? 1 : upperScore)),
+    rowLower: lo,
+    rowUpper: hi,
+    integrality: Array.from({ length: nc }, (_, i) => (i < ne ? 1 : 0)),
+    matrix: {
+      format: "csr",
+      numRows: lo.length,
+      numCols: nc,
+      starts,
+      indices,
+      values,
+    },
+  });
+  const fixed: { terms: Term[]; value: number; integer: boolean }[] = [];
+  const epsilon = 1e-8;
+  // Do not round a fractional relaxation into a schedule.
+  const decode = (candidate: Float64Array) => {
+    if (candidate.length !== nc) return undefined;
+    const plan = slots.map(() => -1),
+      busy = new Set<string>();
+    for (let ei = 0; ei < ne; ei++) {
+      const v = candidate[ei];
+      if (
+        !Number.isFinite(v) ||
+        Math.abs(v - Math.round(v)) > 1e-6 ||
+        v < -1e-6 ||
+        v > 1 + 1e-6
+      )
+        return undefined;
+      if (v < 0.5) continue;
+      const { si, ti } = edges[ei],
+        k = `${ti}/${key(slots[si])}`;
+      if (plan[si] >= 0 || busy.has(k)) return undefined;
+      plan[si] = ei;
+      busy.add(k);
+    }
+    const x = canonical(plan);
+    if (
+      fixed.some(
+        (f) =>
+          Math.abs(dot(f.terms, x) - f.value) >
+          (f.integer ? 1e-6 : epsilon * 4),
+      )
+    )
+      return undefined;
+    return x;
+  };
+  try {
+    model.options.set({
+      output_flag: false,
+      random_seed: d.settings.seed,
+      mip_rel_gap: 0,
+      mip_abs_gap: 0,
+      mip_feasibility_tolerance: 1e-8,
+      primal_feasibility_tolerance: 1e-8,
+      small_matrix_value: 1e-10,
+    });
+    for (let phase = 0; phase < objectives.length; phase++) {
+      const terms = objectives[phase];
+      interruptedPhase = phaseNames[phase];
+      let value = dot(terms, incumbent);
+      const trivial =
+        !terms.length ||
+        value === lowerBounds[phase] ||
+        (phase >= 3 && count < 2);
+      if (!trivial) {
+        const remaining = deadline - performance.now();
+        if (remaining <= 0) {
+          stopReason = "time-limit";
+          break;
+        }
+        const costs = new Float64Array(nc);
+        terms.forEach(([i, v]) => (costs[i] = v));
+        model.changeColsCost({ kind: "range", from: 0, to: nc - 1 }, costs);
+        model.zeroAllClocks();
+        model.options.set("time_limit", remaining / 1000);
+        model.setSolution({ colValue: incumbent });
+        const status = model.run({
+          [highs.constants.callbackType.mipInterrupt]: (event) => {
+            if (performance.now() >= deadline) event.interrupt();
+            progress(
+              Math.min(
+                94,
+                5 +
+                  Math.floor(
+                    (89 * (performance.now() - started)) / Math.max(1, budget),
+                  ),
+              ),
+            );
+          },
+        });
+        let accepted = false;
+        if (
+          model.info.get("primal_solution_status") ===
+          highs.constants.solutionStatus.feasible
+        ) {
+          const next = decode(model.getSolution().colValue);
+          if (next && dot(terms, next) <= value + epsilon) {
+            incumbent = next;
+            value = dot(terms, next);
+            accepted = true;
+          }
+        }
+        if (
+          status.modelStatus !== highs.constants.modelStatus.optimal ||
+          !accepted
+        ) {
+          stopReason =
+            performance.now() >= deadline ? "time-limit" : "solver-limit";
+          break;
+        }
+      }
+      fixed.push({ terms, value, integer: phase < 3 });
+      if (terms.length)
+        model.addRow(value, value, {
+          indices: terms.map((t) => t[0]),
+          values: terms.map((t) => t[1]),
+        });
+      completed.push(phaseNames[phase]);
+      progress(Math.round(5 + 18 * completed.length));
+    }
+  } finally {
+    model.dispose();
+  }
+  const assignments: Assignment[] = slots.map((s) => ({
+    slotId: s.id,
+    teacherId: null,
+  }));
+  edges.forEach((e, i) => {
+    if (incumbent[i] === 1) assignments[e.si].teacherId = d.teachers[e.ti].id;
+  });
   const issues = validate(d, assignments);
-  if (issues.some((x) => x.severity === "error"))
+  if (issues.some((i) => i.severity === "error"))
     throw new Error(
       "배정 결과 검증에 실패했습니다. 결과를 적용하지 않았습니다.",
     );
+  progress(100);
   return {
     engine: ENGINE_VERSION,
     seed: d.settings.seed,
@@ -276,5 +403,14 @@ export function solve(
     assignments,
     issues,
     createdAt: new Date().toISOString(),
+    optimization: {
+      status: completed.length === phaseNames.length ? "optimal" : "feasible",
+      completed,
+      stoppedAt: stopReason ? interruptedPhase : undefined,
+      reason: stopReason,
+      elapsedMs: Math.round(performance.now() - started),
+      scoreRange: (incumbent[maxCol] - incumbent[minCol]) * scale,
+      absoluteDeviation: dot(objectives[4], incumbent) * scale,
+    },
   };
 }

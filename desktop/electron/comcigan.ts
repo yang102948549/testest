@@ -102,6 +102,7 @@ export async function fetchTimetable(code: number): Promise<ComciganTimetable> {
   return {
     school: String(first.학교명 ?? ""),
     teachers: first["자료" + codes.teacher],
+    homerooms: first.담임,
     subjects: first["자료" + codes.subject],
     divisor: Number(first.분리 ?? 100),
     viewLimit: String(first.열람제한일 ?? ""),

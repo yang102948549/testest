@@ -151,7 +151,7 @@ try {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] });
   }, roster);
   await page
-    .getByRole("button", { name: "엑셀·Google Sheets 가져오기", exact: true })
+    .getByRole("button", { name: "명단 가져오기", exact: true })
     .click();
   await page
     .getByRole("button", { name: "엑셀·CSV 파일 선택", exact: true })
@@ -196,12 +196,18 @@ try {
     .check();
   await page.getByLabel("나교사 불가 사유", { exact: true }).fill("출장");
   await nav("배정 세부 설정");
+  await page.getByLabel("교실 감독 가중치", { exact: true }).fill("140.75");
+  await page.getByLabel("복도 감독 가중치", { exact: true }).fill("0.125");
   await page
     .getByRole("button", { name: "설정 저장 및 감독 배정 실행", exact: true })
     .click();
   await page.locator(".proctor-matrix").waitFor({ timeout: 40000 });
   await saved();
   const initial = await doc();
+  assert.equal(initial.settings.classroomWeight, 140.75);
+  assert.equal(initial.settings.hallwayWeight, 0.125);
+  assert.equal(initial.result.engine, "2.0.0-highs");
+  assert.equal(initial.result.optimization.status, "optimal");
   assert.equal(initial.result.assignments.filter((x) => x.teacherId).length, 2);
   assert.equal(initial.teachers[1].exclusionReason, "출장");
   assert(
@@ -262,6 +268,7 @@ try {
     .waitFor();
   await page.getByRole("button", { name: "취소", exact: true }).click();
   await apply();
+  assert.equal((await doc()).result.optimization, undefined, "수동 변경 후 최적성 표시는 해제되어야 함");
   assert.equal(
     (await doc()).result.assignments.filter((x) => x.teacherId).length,
     1,
@@ -480,10 +487,12 @@ try {
   assert.deepEqual(network, []);
   const report = {
     passed: true,
-    version: "1.1.0",
+    version: JSON.parse(await readFile(path.join(root, "package.json"), "utf8")).version,
     executable: process.env.PROCTOR_EXE ? "packaged" : "development",
     largeElapsedMs: Date.now() - started,
     largeAssigned: large.result.assignments.filter((x) => x.teacherId).length,
+    solver: large.result.engine,
+    optimization: large.result.optimization,
     rendererErrors: errors,
     remoteRequests: network,
     verified: [

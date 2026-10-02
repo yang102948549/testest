@@ -1,8 +1,11 @@
+import { comciganTeacherSheet } from "../src/domain/comciganTeachers";
+import { previewTeachers, suggestColumns } from "../src/domain/teacherImport";
 import { describe, expect, it } from "vitest";
 import { blank, Teacher } from "../src/domain/model";
 import {
   ComciganTimetable,
   applyTimetable,
+  comciganClassCounts,
   comciganLessons,
   decodeCell,
   excelLessons,
@@ -148,5 +151,73 @@ describe("시간표 불러오기", () => {
       [2, 3],
       [1, 3],
     ]);
+  });
+});
+
+
+describe("컴시간 교사 명단", () => {
+  it("0부터 시작하는 담임 배열을 교사 번호로 연결하고 고사실을 확인한다", () => {
+    const sheet = comciganTeacherSheet({...comci(), homerooms: [[2, 0, 255], [1, 3]]});
+    expect(sheet.rows.slice(1).map(r => r[3])).toEqual(["2-1", "1-1", "2-2"]);
+    const d = blank();
+    d.rooms = [{id: "r1", name: "1-1", grade: 1, kind: "classroom"}];
+    const preview = previewTeachers(sheet.rows, 0, suggestColumns(sheet.rows[0]), d);
+    expect(preview[1].teacher.homeroom).toBe("r1");
+    expect(preview[0].teacher.homeroom).toBeNull();
+    expect(preview[0].review.join()).toContain("2-1");
+  });
+  it("담임 정보 누락·잘못된 번호·중복 학급은 임의로 연결하지 않는다", () => {
+    expect(comciganTeacherSheet(comci()).rows.slice(1).map(r => r[3])).toEqual(["", "", ""]);
+    const sheet = comciganTeacherSheet({...comci(), homerooms: [[1, 1, -1, 1.5, "2", 999], null as never]});
+    expect(sheet.rows.slice(1).map(r => r[3])).toEqual(["", "", ""]);
+    expect(sheet.rows[1][2]).toContain("담임학급 중복(1-1, 1-2)");
+  });
+  it("별표 동명이인을 분리하고 교사별 과목을 연결한다", () => {
+    const sheet = comciganTeacherSheet(comci());
+    expect(sheet.rows.slice(1).map(r => r.slice(0, 2))).toEqual([
+      ["김수*", "수학"], ["김수*", "국어"], ["이영*", "국어"],
+    ]);
+    sheet.rows[1][0] = "김수진";
+    const preview = previewTeachers(sheet.rows, 0, suggestColumns(sheet.rows[0]), blank());
+    expect(preview.map(r => r.teacher.name)).toEqual(["김수진", "김수*", "이영*"]);
+    expect(new Set(preview.map(r => r.teacher.id)).size).toBe(3);
+    expect(preview.every(r => !r.errors.length)).toBe(true);
+  });
+  it("수업이 없는 교사도 보존하고 비공개·빈 명단은 안내한다", () => {
+    expect(comciganTeacherSheet({...comci(), original: [], weeks: []}).rows).toHaveLength(4);
+    expect(() => comciganTeacherSheet({...comci(), teachers: []})).toThrow("공개한 교사 명단");
+    expect(() => comciganTeacherSheet({...comci(), teachers: undefined as never})).toThrow("제공하지 않습니다");
+  });
+  it("특별교사는 수업이 있는 교시를 감독 가능으로 더하고 일반 교사는 건너뛴다", () => {
+    const d = blank();
+    d.dates = [{ date: "2026-10-19", periods: 3 }];
+    d.teachers = [
+      teacher("a", "김강사", { role: "lecturer", availability: [{ date: "2026-10-19", period: 3 }] }),
+      teacher("b", "이일반"),
+    ];
+    const times = [
+      { date: "2026-10-19", period: 1 },
+      { date: "2026-10-19", period: 3 },
+    ];
+    const r = applyTimetable(
+      d,
+      [
+        { key: "a", label: "김강*", subjects: [], times, candidates: [], teacherId: "a" },
+        { key: "b", label: "이일*", subjects: [], times, candidates: [], teacherId: "b" },
+      ],
+      "designated",
+    );
+    expect(r).toEqual({ changed: 1, skipped: ["이일반"] });
+    expect(d.teachers[0].availability!.map((a) => a.period)).toEqual([3, 1]);
+    expect(d.teachers[1].availability).toBeNull();
+  });
+  it("역할 범위를 주면 그 교사만 연결 후보가 된다", () => {
+    const { lessons } = comciganLessons(comci(), [{ date: "2026-10-19", periods: 3 }]);
+    const roster = [teacher("a", "이영희"), teacher("b", "이영수", { role: "lecturer" })];
+    const m = matchTeachers(lessons, roster, (t) => t.role !== "normal");
+    expect(m.find((x) => x.label === "이영*")!.candidates.map((t) => t.id)).toEqual(["b"]);
+  });
+  it("학년별 학급 수를 기본 시간표에서 센다", () => {
+    expect(comciganClassCounts({ ...comci(), original: [[], [[], [0], [0], [0]], [[], [0]]] as never })).toEqual([3, 1, 0]);
   });
 });

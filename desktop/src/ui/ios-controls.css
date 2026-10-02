@@ -131,14 +131,13 @@ summary:focus-visible {
   font-weight: 700;
   letter-spacing: -0.03em;
 }
-.brand-icon {
-  background: linear-gradient(160deg, #3d9bff, #0066e0);
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  box-shadow:
-    inset 0 0 0 0.5px #ffffff40,
-    0 1px 3px #0060cc40;
+.brand-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: none;
+  border-radius: 0;
 }
 .new-exam {
   margin-bottom: 18px;
@@ -1720,7 +1719,7 @@ main > footer {
 /* ---------- Teacher import: link or file, then map columns on the preview ---------- */
 .import-sources {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 .import-sources .import-source {
@@ -2632,4 +2631,189 @@ main {
 }
 .original-workflow .exam-date-card header .calendar-head button:hover {
   background: #7676801a;
+}
+
+/* ---------- Round 3: quiet swap states, bottom action bar, steady title field ---------- */
+/* Swap states read as soft rounded chips inside the cell (Calendar-style)
+   instead of ring borders, so neighbouring cells never stack into thick lines. */
+.proctor-matrix td.selected-swap,
+.proctor-matrix td.possible-swap,
+.proctor-matrix td.conflict-swap {
+  background: none;
+  box-shadow: none;
+}
+.proctor-matrix td:is(.selected-swap, .possible-swap, .conflict-swap)
+  .teacher-slot {
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  min-height: 25px;
+  margin: 3px;
+  border-radius: 7px;
+  transition: background-color 0.15s ease;
+}
+.proctor-matrix .selected-swap .teacher-slot {
+  background: #007aff1f;
+  color: var(--blue-ink);
+  font-weight: 600;
+}
+.proctor-matrix .possible-swap .teacher-slot {
+  background: #34c7591c;
+  color: #1d7a36;
+}
+.proctor-matrix .possible-swap .teacher-slot:hover:not(:disabled) {
+  background: #34c75933;
+}
+.proctor-matrix .conflict-swap .teacher-slot {
+  background: #ff3b3012;
+  color: #c9483f;
+}
+.proctor-matrix .conflict-swap .teacher-slot:hover:not(:disabled) {
+  background: #ff3b301f;
+}
+.proctor-matrix :is(.possible-swap, .conflict-swap) .available-empty {
+  color: inherit;
+  opacity: 0.55;
+}
+.selected-teacher-row .sticky-name {
+  color: var(--blue-ink);
+  background: #f2f7ff;
+}
+.workflow-legend i {
+  border: 0;
+  border-radius: 3px;
+}
+.workflow-legend .selected-key {
+  background: #007aff33;
+}
+.workflow-legend .possible-key {
+  background: #34c75940;
+}
+.workflow-legend .conflict-key {
+  background: #ff3b3026;
+}
+.workflow-legend .unavailable-key {
+  background: #e5e5ea;
+}
+
+/* Guidance spans the full width; staged-change actions live in the bottom bar
+   next to the legend, where the eye lands after working through the table. */
+.assignment-workflow > .workflow-panel {
+  grid-template-rows: 34px auto minmax(100px, 1fr) 40px;
+}
+.assignment-workflow .selection-guide {
+  grid-column: 1 / -1;
+  min-height: 22px;
+}
+.assignment-workflow .workflow-legend {
+  grid-column: 1;
+  align-self: center;
+}
+.assignment-workflow .workflow-filter {
+  justify-self: end;
+}
+.assignment-workflow .assignment-controls {
+  grid-row: 4;
+  grid-column: 2;
+  align-self: center;
+  gap: 8px;
+}
+.assignment-controls .pending-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+  color: var(--secondary);
+  font-weight: 500;
+}
+.assignment-controls .pending-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff9500;
+}
+.original-workflow .assignment-controls button {
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 16px;
+}
+
+/* Exam title: a full-width inset row like the sections below it. The value
+   stays left-aligned whether or not it is focused, so text never jumps. */
+.exam-title-field {
+  max-width: none;
+}
+.exam-title-field label {
+  gap: 0;
+  padding: 0 8px 0 16px;
+  min-height: 52px;
+}
+.exam-title-field label > input {
+  /* Value text lines up with the "+ 추가" column of the room rows below. */
+  margin-left: 36px;
+}
+.original-workflow .exam-title-field input {
+  text-align: left;
+  color: var(--ink);
+  font-weight: 600;
+  padding: 0 12px;
+  min-height: 36px;
+  border-radius: 8px;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.original-workflow .exam-title-field input:hover {
+  background: var(--fill-2);
+}
+.original-workflow .exam-title-field input:focus {
+  text-align: left;
+  background: var(--surface);
+  box-shadow: 0 0 0 3px #007aff33, inset 0 0 0 1px var(--blue);
+}
+
+.import-sources .import-source { min-width: 0; }
+.import-sources .link-row input { flex: 1; min-width: 0; width: 100%; }
+.import-sources .link-row button { flex-shrink: 0; }
+.import-preview td input:not([type="checkbox"]) { width: 100%; min-width: 120px; }
+
+.school-current {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.school-current > div:first-of-type {
+  display: grid;
+  gap: 2px;
+}
+.school-current small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.school-current .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.match-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.match-select {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.match-select button {
+  white-space: nowrap;
+}
+.bulk-teacher-table input {
+  width: 100%;
+  min-width: 140px;
 }

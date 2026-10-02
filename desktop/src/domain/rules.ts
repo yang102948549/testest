@@ -85,7 +85,7 @@ export function forbidden(
       `감독 불가 교시${exclusion.reason ? `: ${exclusion.reason}` : ""}`,
     );
   if (t.homeroom === s.roomId) reasons.push("담임 학급");
-  if (t.movingRooms.includes(s.roomId)) reasons.push("이동 학급");
+  if (t.movingRooms.includes(s.roomId)) reasons.push("감독불가학급");
   if (t.subjects.some((x) => subjects.get(key(s))?.has(x.trim())))
     reasons.push("담당 과목 시험 교시");
   if (

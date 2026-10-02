@@ -6,6 +6,7 @@ import { documentSchema } from "../src/domain/model";
 import { readGoogleSheet, readTeacherFile } from "./teacherFile";
 import { fetchTimetable, searchSchools } from "./comcigan";
 import { writeWorkbook } from "./exportXlsx";
+import { LicenseStore } from "./license";
 
 if (process.env.PROCTOR_TEST_DATA)
   app.setPath("userData", process.env.PROCTOR_TEST_DATA);
@@ -21,16 +22,25 @@ app.on("second-instance", () => {
 });
 app.whenReady().then(() => {
   if (!gotLock) return;
+  const licenses = new LicenseStore(
+    path.join(app.getPath("userData"), "license.key"),
+    path.join(path.dirname(app.getPath("exe")), "license.key"),
+    app.isPackaged,
+  );
   const store = new Store(path.join(app.getPath("userData"), "exams"));
-  const handle = (channel: string, fn: (...args: any[]) => unknown) =>
+  const handle = (channel: string, fn: (...args: any[]) => unknown, licensed = true) =>
     ipcMain.handle(channel, async (event, ...args) => {
       if (
         event.sender !== window.webContents ||
         event.senderFrame !== window.webContents.mainFrame
       )
         throw new Error("허용되지 않은 요청");
+      if (licensed && !(await licenses.status()).active)
+        throw new Error("프로그램 인증이 필요합니다. 발급받은 CD키를 입력해 주세요.");
       return fn(...args);
     });
+  handle("license:status", () => licenses.status(), false);
+  handle("license:activate", (token: unknown) => licenses.activate(token), false);
   handle("exam:current", () => store.current());
   handle("exam:list", () => store.list());
   handle("teachers:import", async () => {
@@ -116,7 +126,7 @@ app.whenReady().then(() => {
   handle("app:close", () => {
     closing = true;
     window.close();
-  });
+  }, false);
   window = new BrowserWindow({
     width: 1440,
     height: 940,
@@ -125,7 +135,7 @@ app.whenReady().then(() => {
     minHeight: 700,
     show: process.env.PROCTOR_TEST_HIDDEN !== "1",
     backgroundColor: "#ffffff",
-    title: "시험감독",
+    title: "Oni 감독 · Oniabey",
     autoHideMenuBar: true,
     webPreferences: {
       offscreen: process.env.PROCTOR_TEST_HIDDEN === "1",

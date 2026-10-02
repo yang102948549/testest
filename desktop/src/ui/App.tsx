@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   Users,
@@ -15,7 +15,6 @@ import {
   Redo2,
   Download,
   Upload,
-  Check,
   X,
   PanelLeftClose,
   PanelLeftOpen,
@@ -45,10 +44,10 @@ import {
   forbidden,
   slotsFor,
   subjectMap,
-  validate,
   weight,
 } from "../domain/rules";
 import { desktop, RecordEntry } from "../bridge";
+import logo from "../../build/icon.svg";
 import { Schedule } from "./ScheduleWorkflow";
 import { Teachers } from "./TeacherWorkflow";
 import { TeacherTimes } from "./TeacherTimes";
@@ -465,26 +464,14 @@ export function App() {
         void replace(next());
       },
     });
-  const slots = useMemo(() => slotsFor(d), [d]);
-  const issues = useMemo(
-    () => (d.result ? validate(d, d.result.assignments) : []),
-    [d],
-  );
   const stale = !!d.result && d.result.fingerprint !== fingerprint(d);
-  const filled =
-    d.result?.assignments.filter(
-      (a) => a.teacherId && slots.some((s) => s.id === a.slotId),
-    ).length ?? 0;
-  const warnings = issues.filter((i) => i.severity === "warning").length;
   const group = groups.find((g) => g.pages.includes(page))!;
   return (
     <div className={`app page-${group.id} ${collapsed ? "collapsed" : ""}`}>
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-icon">
-            <LayoutGrid size={19} />
-          </div>
-          {!collapsed && <span>시험감독</span>}
+          <img className="brand-logo" src={logo} alt="" />
+          {!collapsed && <span>Oni 감독</span>}
         </div>
         <button
           className="new-exam"
@@ -506,12 +493,7 @@ export function App() {
               >
                 <n.icon size={18} />
                 {!collapsed && (
-                  <>
-                    <span>{n.label}</span>
-                    {n.id === "assignments" && d.result && (
-                      <small>{warnings || <Check size={12} />}</small>
-                    )}
-                  </>
+                  <span>{n.label}</span>
                 )}
               </button>
               {!collapsed && tabs[n.id] && (
@@ -546,7 +528,7 @@ export function App() {
           </button>
           {!collapsed && (
             <span>
-              시험감독 <small>v1.1</small>
+              Oniabey <small>v1.3</small>
             </span>
           )}
         </div>
@@ -682,6 +664,7 @@ export function App() {
                   d={d}
                   edit={edit}
                   ask={setConfirm}
+                  notify={notify}
                   onSample={() =>
                     requestNew(() => sample(), "예시 고사를 열까요?")
                   }
@@ -766,7 +749,7 @@ export function App() {
             </>
           )}
           <footer>
-            시험감독 <span>·</span> 로컬 워크스페이스 <span>·</span>{" "}
+            © 2026 Oniabey <span>·</span> Oni 감독 <span>·</span>{" "}
             {d.settings.mode === "general" ? "일반 감독" : "정/부 감독"}
           </footer>
         </main>

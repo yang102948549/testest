@@ -6,3 +6,7 @@ test-artifacts/
 *.log
 .npm-cache/
 .builder-cache/
+.license-secrets/
+issued-licenses/
+build/license-verifier.exe
+build/license-verifier.generated.cs

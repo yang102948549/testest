@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { Check, FileSpreadsheet, Link2 } from "lucide-react";
+import { ComciganSchool } from "../domain/timetable";
+import { comciganTeacherSheet } from "../domain/comciganTeachers";
 import { desktop } from "../bridge";
 import { ExamDocument } from "../domain/model";
 import {
@@ -31,7 +33,10 @@ export function TeacherImport({
     [header, setHeader] = useState(-1);
   const [mapping, setMapping] = useState<ColumnMap>(suggestColumns([])),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState<"" | "link" | "file">("");
+    [busy, setBusy] = useState<"" | "link" | "file" | "search" | "comcigan">("");
+  const [schoolQuery, setSchoolQuery] = useState("");
+  const [schools, setSchools] = useState<ComciganSchool[] | null>(null);
+  const [comciganNotice, setComciganNotice] = useState("");
   const [omitted, setOmitted] = useState<number[]>([]);
   const rows = sheets[sheetIndex]?.rows ?? [];
   const preview = useMemo(
@@ -81,6 +86,42 @@ export function TeacherImport({
       setBusy("");
     }
   };
+  const fromComcigan = async (school?: ComciganSchool) => {
+    if (busy) return;
+    setError("");
+    setBusy(school ? "comcigan" : "search");
+    try {
+      if (!desktop?.searchSchools || !desktop?.fetchComcigan)
+        throw new Error("컴시간 가져오기는 최신 데스크톱 앱에서 이용해 주세요.");
+      if (school) {
+        const timetable = await desktop.fetchComcigan(school.code);
+        const sheet = comciganTeacherSheet(timetable);
+        setComciganNotice(Array.isArray(timetable.homerooms) ? "" :
+          "담임 데이터가 전달되지 않았습니다. 앱을 다시 실행한 뒤 불러와 주세요. 계속 비어 있으면 학교의 공개 데이터를 확인해야 합니다.");
+        load([sheet], `컴시간 · ${school.name} (${school.region})`);
+      } else {
+        setSchools(null);
+        const found = await desktop.searchSchools(schoolQuery);
+        setSchools(found);
+        if (!found.length) setError("검색된 학교가 없습니다. 학교 이름을 확인해 주세요.");
+      }
+    } catch (e) {
+      setError((e instanceof Error ? e.message : String(e)).replace(/^Error invoking remote method '[^']+': (Error: )?/, ""));
+    } finally {
+      setBusy("");
+    }
+  };
+  const updateCell = (rowNumber: number, column: number, value: string) => {
+    setSheets((old) => old.map((sheet, i) => i !== sheetIndex ? sheet : {
+      ...sheet,
+      rows: sheet.rows.map((row, j) => {
+        if (j !== rowNumber - 1) return row;
+        const next = [...row];
+        next[column] = value;
+        return next;
+      }),
+    }));
+  };
   const columns = Array.from(
     { length: Math.max(0, ...rows.map((r) => r.length)) },
     (_, i) => i,
@@ -96,11 +137,18 @@ export function TeacherImport({
       return next;
     });
   const sampleRows = rows.slice(header + 1).filter((r) => r.some(Boolean));
+  const mappingSamples = sampleRows.slice(0, 4);
+  // The first teachers can all be non-homeroom teachers (e.g. Yongam Middle).
+  // Show one populated homeroom as well so the sample does not imply an empty column.
+  if (mapping.homeroom >= 0 && !mappingSamples.some(r => r[mapping.homeroom]?.trim())) {
+    const withHomeroom = sampleRows.find(r => r[mapping.homeroom]?.trim());
+    if (withHomeroom) mappingSamples.push(withHomeroom);
+  }
   return (
     <Modal
       wide
       title="교사 명단 가져오기"
-      subtitle="Google Sheets 링크나 엑셀 파일에서 교사를 불러와 명단에 추가합니다. 기존 교사는 그대로 둡니다."
+      subtitle="엑셀·Google Sheets·컴시간에서 교사를 불러와 명단에 추가합니다."
       onClose={onClose}
       footer={
         <>
@@ -132,6 +180,28 @@ export function TeacherImport({
     >
       {!sheets.length ? (
         <div className="import-sources">
+          <form className="import-source comcigan-roster-source" onSubmit={(e) => {
+            e.preventDefault();
+            if (schoolQuery.trim().length >= 2) void fromComcigan();
+          }}>
+            <h3>컴시간 학교 검색</h3>
+            <div className="link-row">
+              <input aria-label="명단 가져올 학교 이름" placeholder="학교 이름 2글자 이상"
+                value={schoolQuery} disabled={!!busy}
+                onChange={(e) => { setSchoolQuery(e.target.value); setSchools(null); }} />
+              <button type="submit" disabled={!!busy || schoolQuery.trim().length < 2}>
+                {busy === "search" ? "검색 중…" : "학교 검색"}
+              </button>
+            </div>
+            <p>학교를 선택하면 공개된 교사 명단을 불러옵니다. 이름과 담당과목은 아래 미리보기에서 수정하세요. 같은 이름도 별도 교사로 유지됩니다.</p>
+            {busy === "comcigan" && <p role="status">교사 명단 불러오는 중…</p>}
+            {!!schools?.length && <div className="school-list">
+              {schools.map((school) => <button type="button" key={school.code}
+                disabled={!!busy} onClick={() => void fromComcigan(school)}>
+                <span>{school.name}</span><small>{school.region}</small>
+              </button>)}
+            </div>}
+          </form>
           <form
             className="import-source"
             onSubmit={(e) => {
@@ -250,7 +320,7 @@ export function TeacherImport({
                   </tr>
                 </thead>
                 <tbody>
-                  {sampleRows.slice(0, 4).map((r, i) => (
+                  {mappingSamples.map((r, i) => (
                     <tr key={i}>
                       {columns.map((c) => (
                         <td key={c} className={fieldOf(c) ? "mapped" : ""}>
@@ -272,9 +342,16 @@ export function TeacherImport({
             <div className="import-preview">
               <h3>추가할 교사 확인</h3>
               <p>
-                제외할 교사는 체크를 해제하세요. 같은 이름도 별도 교사로
+                이름은 아래 입력칸에서 수정하고, 제외할 교사는 체크를 해제하세요. 같은 이름도 별도 교사로
                 추가됩니다.
               </p>
+              {source.startsWith("컴시간 ·") && (
+                <>
+                  <p>담임학급 {preview.filter(r => (rows[r.row - 1]?.[mapping.homeroom] ?? "").trim()).length}명 불러옴 · 고사실 연결 {preview.filter(r => r.teacher.homeroom).length}명. 미등록 학급은 시험 설정에서 고사실을 등록한 뒤 다시 불러오거나, 추가 후 담임을 지정하세요.</p>
+                  {comciganNotice && <p role="status" className="needs-review">{comciganNotice}</p>}
+                  <p>담당과목과 담임학급을 직접 수정할 수 있습니다. 여러 과목은 쉼표로 구분하세요.</p>
+                </>
+              )}
               {d.teachers.length + chosen.length > 1000 && (
                 <p role="alert">
                   전체 교사는 최대 1,000명까지 등록할 수 있습니다.
@@ -287,6 +364,7 @@ export function TeacherImport({
                       <th>추가</th>
                       <th>교사명</th>
                       <th>담당과목</th>
+                      <th>담임학급</th>
                       <th>확인 사항</th>
                     </tr>
                   </thead>
@@ -310,8 +388,27 @@ export function TeacherImport({
                             }
                           />
                         </td>
-                        <td>{r.teacher.name || "이름 없음"}</td>
-                        <td>{r.teacher.subjects.join(", ")}</td>
+                        <td><input aria-label={`${r.row}행 교사명`} value={rows[r.row - 1]?.[mapping.name] ?? ""}
+                          onChange={(e) => updateCell(r.row, mapping.name, e.target.value)} /></td>
+                        <td>{source.startsWith("컴시간 ·") && mapping.subjects >= 0 ? (
+                          <input aria-label={`${r.row}행 담당과목`}
+                            placeholder="예: 국어, 문학"
+                            value={rows[r.row - 1]?.[mapping.subjects] ?? ""}
+                            onChange={(e) => updateCell(r.row, mapping.subjects, e.target.value)} />
+                        ) : r.teacher.subjects.join(", ")}</td>
+                        <td>{mapping.homeroom >= 0 ? (
+                          <>
+                            <input aria-label={`${r.row}행 담임학급`}
+                              placeholder="없음"
+                              value={rows[r.row - 1]?.[mapping.homeroom] ?? ""}
+                              onChange={(e) => updateCell(r.row, mapping.homeroom, e.target.value)} />
+                            {!!(rows[r.row - 1]?.[mapping.homeroom] ?? "").trim() && (
+                              <small className={r.teacher.homeroom ? "ok" : "needs-review"}>
+                                {r.teacher.homeroom ? "고사실 연결됨" : "미연결 · 확인 필요"}
+                              </small>
+                            )}
+                          </>
+                        ) : "—"}</td>
                         <td
                           className={
                             r.errors.length

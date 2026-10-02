@@ -8,6 +8,8 @@ type Grid = unknown[][][][]; // [grade][class][weekday][period], index 0 = count
 export type ComciganTimetable = {
   school: string;
   teachers: string[];
+  /** Public 담임[grade - 1][class - 1] holds a teacher index; 0 is unassigned. */
+  homerooms?: unknown[][];
   subjects: string[];
   divisor: number;
   viewLimit: string;
@@ -196,13 +198,14 @@ export type TeacherMatch = {
 export function matchTeachers(
   lessons: TimetableLesson[],
   teachers: Teacher[],
+  include: (t: Teacher) => boolean = () => true,
 ): TeacherMatch[] {
   const groups = new Map<string, TimetableLesson[]>();
   for (const l of lessons) {
     if (!l.teacher.replace(/\*/g, "").trim()) continue;
     groups.set(l.key, [...(groups.get(l.key) ?? []), l]);
   }
-  const roster = teachers.filter((t) => t.role !== "excluded");
+  const roster = teachers.filter((t) => t.role !== "excluded" && include(t));
   return [...groups]
     .map(([key, list]) => {
       const label = list[0].teacher;
@@ -238,8 +241,15 @@ export function matchTeachers(
     );
 }
 
-/** Marks matched normal teachers as unable to proctor during their lessons. */
-export function applyTimetable(x: ExamDocument, matches: TeacherMatch[]) {
+/**
+ * "blocked": normal teachers cannot proctor while they teach (designated ones are skipped).
+ * "designated": designated teachers proctor the periods they teach (normal ones are skipped).
+ */
+export function applyTimetable(
+  x: ExamDocument,
+  matches: TeacherMatch[],
+  mode: "blocked" | "designated" = "blocked",
+) {
   const all = x.dates.flatMap((d) =>
     Array.from({ length: d.periods }, (_, i) => ({ date: d.date, period: i + 1 })),
   );
@@ -249,6 +259,19 @@ export function applyTimetable(x: ExamDocument, matches: TeacherMatch[]) {
   for (const m of matches) {
     const t = x.teachers.find((a) => a.id === m.teacherId);
     if (!t) continue;
+    if (mode === "designated") {
+      if (t.role === "normal" || t.role === "excluded") {
+        skipped.add(t.name);
+        continue;
+      }
+      const have = new Set((t.availability ?? []).map(key));
+      const add = m.times.filter((a) => !have.has(key(a)));
+      if (!add.length) continue;
+      t.availability = [...(t.availability ?? []), ...add];
+      t.exclusions = t.exclusions.filter((e) => !add.some((a) => key(a) === key(e)));
+      changed.add(t.id);
+      continue;
+    }
     // Designated teachers proctor only on their chosen periods; leave them alone.
     if (t.role !== "normal") {
       skipped.add(t.name);
@@ -263,6 +286,17 @@ export function applyTimetable(x: ExamDocument, matches: TeacherMatch[]) {
     changed.add(t.id);
   }
   return { changed: changed.size, skipped: [...skipped] };
+}
+
+/** Number of classes per grade (index 0 = grade 1) from the base timetable. */
+export function comciganClassCounts(t: ComciganTimetable): number[] {
+  return [1, 2, 3].map((g) => {
+    const grade = t.original?.[g];
+    if (!Array.isArray(grade)) return 0;
+    let n = 0;
+    for (let c = 1; c < grade.length; c++) if (Array.isArray(grade[c])) n = c;
+    return n;
+  });
 }
 
 /** Exam slots in a timetable ("고사", "시험") are not classes and never block proctoring. */

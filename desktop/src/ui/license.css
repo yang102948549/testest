@@ -1,0 +1,11 @@
+.license-screen { min-height:100vh; display:grid; place-items:center; padding:32px; background:#f4f6f9; }
+.license-card { width:min(560px,100%); padding:40px; border:1px solid #e3e7ee; border-radius:20px; background:white; box-shadow:0 16px 48px #152b4510; }
+.license-mark { width:48px; height:48px; display:grid; place-items:center; border-radius:14px; background:#254edb; color:white; font-weight:800; }
+.license-card h1 { margin:20px 0 6px; font-size:25px; }
+.license-card h2 { margin-top:28px; font-size:18px; }
+.license-card p { color:#596577; line-height:1.7; }
+.license-card .license-author { margin-top:0; color:#748094; }
+.license-card label { display:block; margin:20px 0 8px; font-weight:600; }
+.license-card textarea { box-sizing:border-box; width:100%; padding:12px; border:1px solid #cbd3df; border-radius:8px; resize:vertical; font-family:monospace; word-break:break-all; }
+.license-card button { width:100%; margin-top:16px; padding:12px; }
+.license-card .license-help { margin:24px 0 0; font-size:12px; }

@@ -100,15 +100,13 @@ export function TeacherTimes({
                 <option key={x.date}>{x.date}</option>
               ))}
             </select>
-            {!designatedStep && (
-              <button
-                className="primary push-right"
-                onClick={() => setImporting(true)}
-              >
-                <CalendarSearch size={16} />
-                시간표에서 불러오기
-              </button>
-            )}
+            <button
+              className="primary push-right"
+              onClick={() => setImporting(true)}
+            >
+              <CalendarSearch size={16} />
+              시간표에서 불러오기
+            </button>
           </div>
           <div className="workflow-table-scroll time-scroll">
             <table className="proctor-matrix time-matrix">
@@ -246,6 +244,7 @@ export function TeacherTimes({
           d={d}
           edit={edit}
           notify={notify}
+          mode={step}
           onClose={() => setImporting(false)}
         />
       )}

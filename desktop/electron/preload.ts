@@ -1,5 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 contextBridge.exposeInMainWorld("desktop", {
+  licenseStatus: () => ipcRenderer.invoke("license:status"),
+  activateLicense: (token: string) => ipcRenderer.invoke("license:activate", token),
   current: () => ipcRenderer.invoke("exam:current"),
   list: () => ipcRenderer.invoke("exam:list"),
   importTeachers: () => ipcRenderer.invoke("teachers:import"),

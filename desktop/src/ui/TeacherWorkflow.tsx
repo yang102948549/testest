@@ -1,9 +1,10 @@
 // TeacherUI.html chip containers and staged subject/class grid pickers.
 import { useState } from "react";
-import { FileSpreadsheet, Plus, Trash2, X } from "lucide-react";
+import { FileSpreadsheet, ListChecks, Plus, Trash2, X } from "lucide-react";
 import { ExamDocument, Teacher, uid } from "../domain/model";
 import { isDesignated, sortedRooms } from "../domain/rules";
 import { TeacherImport } from "./TeacherImport";
+import { BulkTeacherEdit } from "./BulkTeacherEdit";
 import {
   Ask,
   Edit,
@@ -34,7 +35,8 @@ export function Teachers({
   ask: Ask;
   onNext: () => void;
 }) {
-  const [importing, setImporting] = useState(false);
+  const [importing, setImporting] = useState(false),
+    [bulk, setBulk] = useState(false);
   const [query, setQuery] = useState(""),
     [picker, setPicker] = useState<{
       id: string;
@@ -67,13 +69,19 @@ export function Teachers({
     <div className="original-workflow">
       <Panel
         title="교사 기본 정보 설정"
-        description="과목·담임·이동학급 칸을 클릭해 선택하세요. 복수 과목과 여러 이동학급을 지정할 수 있습니다."
+        description="과목·담임·감독불가학급 칸을 클릭해 선택하세요. 복수 과목과 여러 감독불가학급을 지정할 수 있습니다."
         action={
           <div className="actions">
             <button className="ghost" onClick={() => setImporting(true)}>
               <FileSpreadsheet size={16} />
-              엑셀·Google Sheets 가져오기
+              명단 가져오기
             </button>
+            {!!d.teachers.length && (
+              <button className="ghost" onClick={() => setBulk(true)}>
+                <ListChecks size={16} />
+                이름·과목 일괄 편집
+              </button>
+            )}
             {!!d.teachers.length && (
               <button
                 className="destructive"
@@ -115,7 +123,7 @@ export function Teachers({
         </div>
         {!d.teachers.length ? (
           <Empty>
-            기존 명단이 있다면 ‘엑셀·Google Sheets 가져오기’를 누르세요. 직접
+            기존 명단이 있다면 ‘명단 가져오기’를 누르세요. 직접
             교사를 추가할 수도 있습니다.
           </Empty>
         ) : (
@@ -130,7 +138,7 @@ export function Teachers({
                   </th>
                   <th>담임</th>
                   <th>
-                    이동학급 <small>다중 선택</small>
+                    감독불가학급 <small>다중 선택</small>
                   </th>
                   <th>비고 / 역할</th>
                   <th />
@@ -222,7 +230,7 @@ export function Teachers({
                       <td>
                         <button
                           className="chip-field"
-                          aria-label={`${t.name} 이동 학급 선택`}
+                          aria-label={`${t.name} 감독불가학급 선택`}
                           onClick={() =>
                             setPicker({ id: t.id, field: "movingRooms" })
                           }
@@ -234,7 +242,7 @@ export function Teachers({
                               </span>
                             ))
                           ) : (
-                            <span className="placeholder">+ 이동학급</span>
+                            <span className="placeholder">+ 감독불가학급</span>
                           )}
                         </button>
                       </td>
@@ -317,6 +325,9 @@ export function Teachers({
       {importing && (
         <TeacherImport d={d} edit={edit} onClose={() => setImporting(false)} />
       )}
+      {bulk && (
+        <BulkTeacherEdit d={d} edit={edit} onClose={() => setBulk(false)} />
+      )}
       {picker && t && (
         <GridPicker
           title={
@@ -324,7 +335,7 @@ export function Teachers({
               ? "담당과목 선택"
               : picker.field === "homeroom"
                 ? "담임 학급 선택"
-                : "이동 학급 선택 (다중)"
+                : "감독불가학급 선택 (다중)"
           }
           options={
             picker.field === "subjects"
@@ -362,6 +373,7 @@ export function Teachers({
                 resolveReview(a, "담임");
               } else {
                 a.movingRooms = v;
+                resolveReview(a, "감독불가학급");
                 resolveReview(a, "이동학급");
               }
             })

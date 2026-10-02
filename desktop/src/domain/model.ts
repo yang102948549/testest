@@ -17,7 +17,8 @@ export const teacherSchema = z.object({
   movingRooms: z.array(id),
   // v1.1 names: required -> designated, priority -> lecturer.
   role: z.preprocess(
-    (v) => (v === "required" ? "designated" : v === "priority" ? "lecturer" : v),
+    (v) =>
+      v === "required" ? "designated" : v === "priority" ? "lecturer" : v,
     z.enum([
       "normal",
       "designated",
@@ -53,8 +54,8 @@ const lessonSchema = time.extend({
 });
 export const settingsSchema = z.object({
   mode: z.enum(["general", "mainSub"]),
-  classroomWeight: z.number().min(0).max(100),
-  hallwayWeight: z.number().min(0).max(100),
+  classroomWeight: z.number().finite().min(0),
+  hallwayWeight: z.number().finite().min(0),
   maxClassroom: z.number().int().min(0).max(1000),
   maxHallway: z.number().int().min(0).max(12),
   allowThird: z.boolean(),
@@ -78,12 +79,31 @@ const resultSchema = z.object({
   assignments: z.array(assignmentSchema),
   issues: z.array(issueSchema),
   createdAt: z.string(),
+  optimization: z
+    .object({
+      status: z.enum(["optimal", "feasible"]),
+      completed: z.array(z.string()),
+      stoppedAt: z.string().optional(),
+      reason: z.enum(["time-limit", "solver-limit"]).optional(),
+      elapsedMs: z.number().nonnegative(),
+      scoreRange: z.number().nonnegative(),
+      absoluteDeviation: z.number().nonnegative(),
+    })
+    .optional(),
 });
 export const documentSchema = z
   .object({
     version: z.literal(1),
     id,
     title: z.string().min(1).max(200),
+    // School picked from Comcigan; optional so older files still open.
+    school: z
+      .object({
+        code: z.number().int().positive(),
+        name: z.string().min(1).max(100),
+        region: z.string().max(100),
+      })
+      .optional(),
     dates: z
       .array(z.object({ date, periods: z.number().int().min(1).max(12) }))
       .max(60),

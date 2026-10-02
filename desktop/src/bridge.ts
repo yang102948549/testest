@@ -11,6 +11,8 @@ export type Loaded = { document: ExamDocument; recovered: boolean };
 declare global {
   interface Window {
     desktop?: {
+      licenseStatus: () => Promise<import("../electron/license").LicenseStatus>;
+      activateLicense: (token: string) => Promise<import("../electron/license").LicenseStatus>;
       current: () => Promise<Loaded | null>;
       list: () => Promise<RecordEntry[]>;
       importTeachers: () => Promise<

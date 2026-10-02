@@ -18,7 +18,7 @@ export function Settings({
     <div className="original-workflow">
       <Panel
         title="감독 배정 세부 설정"
-        description="감독 방식과 가중치·횟수 제한을 확인한 뒤 배정을 실행하세요."
+        description="지정배치·충원·자리 선호를 우선하고, 일반 교사의 가중 점수 차이를 최소화합니다."
       >
         <div className="mode-card">
           <div>
@@ -54,14 +54,12 @@ export function Settings({
                 {
                   key: "classroomWeight",
                   label: "교실 감독",
-                  step: 0.5,
-                  max: 100,
+                  step: "any",
                 },
                 {
                   key: "hallwayWeight",
                   label: "복도 감독",
-                  step: 0.5,
-                  max: 100,
+                  step: "any",
                 },
               ] as const
             ).map((f) => (
@@ -71,15 +69,13 @@ export function Settings({
                   aria-label={f.label + " 가중치"}
                   type="number"
                   min={0}
-                  max={f.max}
                   step={f.step}
                   value={d.settings[f.key]}
                   onChange={(e) =>
                     edit((x) => {
-                      x.settings[f.key] = Math.max(
-                        0,
-                        Math.min(f.max, +e.target.value),
-                      );
+                      const value = e.target.valueAsNumber;
+                      if (Number.isFinite(value) && value >= 0)
+                        x.settings[f.key] = value;
                     })
                   }
                 />
@@ -87,7 +83,7 @@ export function Settings({
             ))}
           </div>
           <div>
-            <h3>감독 횟수 제한</h3>
+            <h3>감독 횟수 참고 기준</h3>
             {(
               [
                 {
@@ -121,7 +117,7 @@ export function Settings({
             ))}
           </div>
           <label className="daily-option">
-            <span>하루 3회 이상 교실 감독 허용</span>
+            <span>하루 3회 이상 교실 감독 경고 해제</span>
             <input
               type="checkbox"
               checked={d.settings.allowThird}
@@ -134,8 +130,10 @@ export function Settings({
           </label>
         </fieldset>
         <p className="settings-note">
-          빈자리가 남으면 횟수 상한을 완화하고 결과에 초과 내역을 표시합니다.
-          담당 과목·제외 시간·중복 배정 금지는 항상 유지됩니다.
+          가중치는 0 이상의 소수도 입력할 수 있습니다. 점수 격차를 먼저 줄이고,
+          동률이면 평균과의 차이를 줄입니다. 횟수 기준은 참고 경고이며 배정을
+          제한하지 않습니다. 담당 과목·제외 시간·담임·감독불가 학급·중복 배정
+          금지는 항상 유지됩니다.
         </p>
         <details className="advanced-settings" open>
           <summary>다른 배정안 만들기</summary>
@@ -157,8 +155,8 @@ export function Settings({
             />
           </label>
           <p>
-            입력과 번호가 같으면 같은 결과를 만듭니다. 다른 배정안을 보려면
-            번호를 바꾸세요.
+            번호는 탐색 시작점을 바꿉니다. 계산은 약 10초를 기준으로 하며, 시간
+            내 최적성을 확인하지 못하면 확보한 배치안을 표시합니다.
           </p>
         </details>
       </Panel>

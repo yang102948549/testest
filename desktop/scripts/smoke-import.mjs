@@ -11,7 +11,7 @@ const app=await electron.launch({executablePath:electronPath,args:['.'],env:{...
 try {
  const page=await app.firstWindow();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.getByRole('button',{name:'교사 설정',exact:true}).click();
- await page.getByRole('button',{name:'엑셀·Google Sheets 가져오기',exact:true}).click();
+ await page.getByRole('button',{name:'명단 가져오기',exact:true}).click();
  await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},file);
  await page.getByRole('button',{name:'엑셀·CSV 파일 선택',exact:true}).click();
  await page.getByLabel('명단 시트',{exact:true}).selectOption('1');
@@ -23,7 +23,7 @@ try {
  let doc=await page.evaluate(async()=> (await window.desktop.current()).document);
  assert.deepEqual(doc.teachers[0].subjects,['국어','문학']);assert.equal(doc.teachers[1].role,'designated');
  await page.screenshot({path:path.join(artifacts,'readable-teachers.png')});
- await page.getByRole('button',{name:'엑셀·Google Sheets 가져오기',exact:true}).click();
+ await page.getByRole('button',{name:'명단 가져오기',exact:true}).click();
  await page.getByLabel('Google Sheets 링크',{exact:true}).fill('https://example.com/sheet');
  await page.getByRole('button',{name:'불러오기',exact:true}).click();
  await page.getByText('docs.google.com/spreadsheets/d/',{exact:false}).waitFor();
@@ -49,6 +49,33 @@ try {
  await page.screenshot({path:path.join(artifacts,'readable-settings.png')});
  await page.getByRole('tab',{name:'감독 방식·배정 기준',exact:false}).click();
  await page.screenshot({path:path.join(artifacts,'readable-rules.png')});
+ await page.getByRole('button',{name:'교사 설정',exact:true}).click();
+ await app.evaluate(({ipcMain})=>{
+   ipcMain.removeHandler('timetable:schools');
+   ipcMain.handle('timetable:schools',()=>[{name:'테스트고',region:'서울',code:123}]);
+   ipcMain.removeHandler('timetable:comcigan');
+   ipcMain.handle('timetable:comcigan',()=>({school:'테스트고',teachers:['','김수*','김수*'],homerooms:[[2,1]],subjects:[],divisor:100,viewLimit:'',original:[],weeks:[]}));
+ });
+ await page.getByRole('button',{name:'명단 가져오기',exact:true}).click();
+ await page.screenshot({path:path.join(artifacts,'import-three-sources.png')});
+ await page.getByLabel('명단 가져올 학교 이름').fill('테스트');
+ await page.getByRole('button',{name:'학교 검색',exact:true}).click();
+ await page.getByRole('button',{name:'테스트고 서울'}).click();
+ assert.equal(await page.getByLabel('2행 담임학급',{exact:true}).inputValue(),'1-2');
+ assert.equal(await page.getByLabel('3행 담임학급',{exact:true}).inputValue(),'1-1');
+ await page.getByText('담임학급 2명 불러옴', {exact:false}).waitFor();
+ await page.getByLabel('2행 교사명',{exact:true}).fill('김수진');
+ assert.equal(await page.getByLabel('3행 교사명',{exact:true}).inputValue(),'김수*');
+ await page.getByLabel('2행 담당과목',{exact:true}).fill('국어, 문학');
+ await page.getByLabel('3행 담당과목',{exact:true}).fill('수학');
+ await page.screenshot({path:path.join(artifacts,'import-edit-subjects.png')});
+ await page.getByRole('button',{name:'2명 추가',exact:true}).click();
+ await page.keyboard.press('Control+s');
+ await page.waitForFunction(()=>document.querySelector('.save-state')?.textContent?.trim()==='저장됨');
+ const roster=(await page.evaluate(async()=> (await window.desktop.current()).document)).teachers;
+ assert.deepEqual(roster.map(t=>t.name),['김수진','김수*']);
+ assert.notEqual(roster[0].id,roster[1].id);
+ assert.deepEqual(roster.map(t=>t.subjects),[['국어','문학'],['수학']]);
  assert.deepEqual(errors,[]);
  await writeFile(path.join(artifacts,'teacher-import-ui-report.json'),JSON.stringify({passed:true,imported:2,cancelPreserves:true,duplicateWarning:true,rendererErrors:errors},null,2));
  console.log('교사 XLSX 파일 선택 → 시트/열 미리보기 → 추가/저장, 열 연결, 잘못된 링크 안내, 동명이인 경고, 취소, 전체 삭제 검증 통과');

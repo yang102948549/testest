@@ -137,6 +137,7 @@ export function Assignments({
         x.result = {
           ...x.result!,
           assignments: plan,
+          optimization: undefined,
           issues: found,
           fingerprint: fingerprint(x),
         };
@@ -171,6 +172,7 @@ export function Assignments({
       x.result = {
         ...x.result!,
         assignments: next,
+        optimization: undefined,
         issues: validate(x, next),
         fingerprint: fingerprint(x),
       };
@@ -263,6 +265,13 @@ export function Assignments({
       ) : (
         <>
           <div className="assignment-summary">
+            {!stale && !draft && d.result.optimization && (
+              <span role="status" title={d.result.optimization.completed.join(" → ")}>
+                {d.result.optimization.status === "optimal"
+                  ? "최적해 확인"
+                  : `배정안 확보 · ${d.result.optimization.stoppedAt ?? "점수"} 최적성 미확인`}
+              </span>
+            )}
             <span>
               <b>{slots.filter((s) => assigned.get(s.id)).length}</b> /{" "}
               {slots.length}자리 배정
@@ -541,7 +550,7 @@ export function Assignments({
                                     key(selected[0]) === key(time) &&
                                     selected[0].teacherId !== t.id,
                                   conflicts = alternatives.get(t.id) ?? [];
-                                const className = `${time.period === dates.find((x) => x.date === time.date)!.periods ? "date-end" : ""} ${isSelected ? "selected-swap" : isTarget ? (conflicts.length ? "conflict-swap" : "possible-swap") : reason ? "unavailable-slot" : !ownHere.length ? "empty-slot" : ""}`;
+                                const className = `${time.period === dates.find((x) => x.date === time.date)!.periods ? "date-end" : ""} ${isSelected ? "selected-swap" : reason ? "unavailable-slot" : isTarget ? (conflicts.length ? "conflict-swap" : "possible-swap") : !ownHere.length ? "empty-slot" : ""}`;
                                 return (
                                   <td key={key(time)} className={className}>
                                     <button

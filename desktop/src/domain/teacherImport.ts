@@ -4,7 +4,7 @@ export const importFields = {
   name: "교사명",
   subjects: "담당과목",
   homeroom: "담임 학급",
-  movingRooms: "이동학급",
+  movingRooms: "감독불가학급",
   role: "역할",
   note: "메모",
 };
@@ -55,7 +55,7 @@ export function suggestColumns(headers: string[]): ColumnMap {
     name: ["교사명", "이름", "성명", "교사이름", "name"],
     subjects: ["담당과목", "과목", "교과", "subjects"],
     homeroom: ["담임", "담임학급", "담임반"],
-    movingRooms: ["이동학급", "이동반"],
+    movingRooms: ["감독불가학급", "감독불가반", "이동학급", "이동반"],
     role: ["역할", "배정역할"],
     note: ["메모", "비고", "제외사유"],
   };
@@ -125,7 +125,7 @@ export function previewTeachers(
       subjects: split(value("subjects")),
       homeroom: room(value("homeroom"), "담임 학급"),
       movingRooms: split(value("movingRooms"))
-        .map((n) => room(n, "이동학급"))
+        .map((n) => room(n, "감독불가학급"))
         .filter((x): x is string => !!x),
       role: role ?? "normal",
       note: value("note"),

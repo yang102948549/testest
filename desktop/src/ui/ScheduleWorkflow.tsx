@@ -1,11 +1,14 @@
 // Interaction structure ported from ScheduleUI.html: grade room chips,
 // date cards with period x grade cells, and a staged subject/room modal.
 import { useEffect, useRef, useState } from "react";
-import { Plus, X, Minus, FlaskConical, Trash2 } from "lucide-react";
+import { Plus, X, Minus, FlaskConical, Trash2, School } from "lucide-react";
 import { ExamDocument, uid, key } from "../domain/model";
 import { sortedRooms } from "../domain/rules";
 import { RoomToken } from "./RoomToken";
 import { Calendar, DateField } from "./DatePicker";
+import { SchoolSearch, cleanError, rememberSchool } from "./SchoolSearch";
+import { desktop } from "../bridge";
+import { comciganClassCounts, type ComciganSchool } from "../domain/timetable";
 import {
   Ask,
   Edit,
@@ -24,10 +27,12 @@ export function Schedule({
   ask,
   onSample,
   onNext,
+  notify,
 }: {
   d: ExamDocument;
   edit: Edit;
   ask: Ask;
+  notify: (s: string) => void;
   onSample: () => void;
   onNext: () => void;
 }) {
@@ -42,11 +47,14 @@ export function Schedule({
     [newDates, setNewDates] = useState<string[]>([]);
   const [roomCounts, setRoomCounts] = useState([5, 5, 5]);
   const [roomsOpen, setRoomsOpen] = useState(true);
+  const [schoolBusy, setSchoolBusy] = useState(false),
+    [schoolError, setSchoolError] = useState(""),
+    [changingSchool, setChangingSchool] = useState(false);
   useEffect(() => setRoomsOpen(true), [d.id]);
   const removeRoom = (id: string) =>
     ask({
       title: "고사실을 삭제할까요?",
-      text: "연결된 과목·담임·이동학급도 정리됩니다.",
+      text: "연결된 과목·담임·감독불가학급도 정리됩니다.",
       run: () =>
         edit((x) => {
           x.rooms = x.rooms.filter((r) => r.id !== id);
@@ -60,13 +68,30 @@ export function Schedule({
           x.singleRooms = x.singleRooms.filter((r) => r.roomId !== id);
         }),
     });
+  /** Adds rooms; lessons that covered every classroom of the grade cover the new ones too. */
+  const appendRooms = (
+    x: ExamDocument,
+    grade: number,
+    added: ExamDocument["rooms"],
+  ) => {
+    const old = x.rooms.filter((r) => r.grade === grade && r.kind === "classroom");
+    x.rooms.push(...added);
+    if (added[0]?.kind === "classroom" && old.length)
+      x.lessons
+        .filter(
+          (l) =>
+            l.grade === grade &&
+            l.roomIds.length === old.length &&
+            old.every((r) => l.roomIds.includes(r.id)),
+        )
+        .forEach((l) => l.roomIds.push(...added.map((r) => r.id)));
+  };
   const addRooms = (
     grade: number,
     count = 1,
     kind: ExamDocument["rooms"][number]["kind"] = "classroom",
   ) =>
     edit((x) => {
-      const old = x.rooms.filter((r) => r.grade === grade && r.kind === kind);
       const added: ExamDocument["rooms"] = [];
       let n = 1;
       while (added.length < count) {
@@ -83,17 +108,58 @@ export function Schedule({
           added.push({ id: uid(), name, grade, kind });
         n++;
       }
-      x.rooms.push(...added);
-      if (kind === "classroom" && old.length)
-        x.lessons
-          .filter(
-            (l) =>
-              l.grade === grade &&
-              l.roomIds.length === old.length &&
-              old.every((r) => l.roomIds.includes(r.id)),
-          )
-          .forEach((l) => l.roomIds.push(...added.map((r) => r.id)));
+      appendRooms(x, grade, added);
     });
+  /** Classes the school has, added only when the name is not registered yet. */
+  const importClassrooms = (counts: number[]) => {
+    let total = 0;
+    edit((x) => {
+      counts.forEach((count, i) => {
+        const grade = i + 1;
+        const added: ExamDocument["rooms"] = [];
+        for (let n = 1; n <= count; n++) {
+          const name = `${grade}-${n}`;
+          if (!x.rooms.some((r) => r.name === name))
+            added.push({ id: uid(), name, grade, kind: "classroom" });
+        }
+        total += added.length;
+        if (added.length) appendRooms(x, grade, added);
+      });
+    });
+    return total;
+  };
+  const loadClassrooms = async (school: ComciganSchool, quiet = false) => {
+    setSchoolError("");
+    setSchoolBusy(true);
+    try {
+      if (!desktop?.fetchComcigan)
+        throw new Error("앱이 업데이트되었습니다. 앱을 닫고 다시 실행해 주세요.");
+      const counts = comciganClassCounts(await desktop.fetchComcigan(school.code));
+      if (!counts.some(Boolean))
+        throw new Error("컴시간에서 학년별 학급 수를 찾지 못했습니다. 직접 추가해 주세요.");
+      const added = importClassrooms(counts);
+      notify(
+        added
+          ? `${school.name}의 학급 ${added}개를 고사실에 추가했습니다 (${counts.map((c, i) => `${i + 1}학년 ${c}반`).join(" · ")}). 필요하면 이름을 눌러 수정하세요.`
+          : quiet
+            ? ""
+            : "이미 모든 학급이 등록되어 있습니다.",
+      );
+    } catch (e) {
+      setSchoolError(cleanError(e));
+    } finally {
+      setSchoolBusy(false);
+    }
+  };
+  const chooseSchool = (school: ComciganSchool) => {
+    rememberSchool(school);
+    edit((x) => {
+      x.school = school;
+    });
+    setChangingSchool(false);
+    // Start from the school's own classes when nothing is registered yet.
+    if (!d.rooms.some((r) => r.kind === "classroom")) void loadClassrooms(school, true);
+  };
   const cleanTimes = (x: ExamDocument) => {
     const valid = (t: { date: string; period: number }) =>
       x.dates.some((day) => day.date === t.date && t.period <= day.periods);
@@ -189,6 +255,50 @@ export function Schedule({
           />
         </label>
       </div>
+      <Panel
+        title="학교 설정"
+        description="컴시간에서 학교를 정하면 학급을 고사실로 불러오고, 교사 설정에서 시간표를 바로 불러옵니다. 설정하지 않아도 모두 직접 입력할 수 있습니다."
+      >
+        {d.school && !changingSchool ? (
+          <div className="school-current">
+            <School size={18} />
+            <div>
+              <b>{d.school.name}</b>
+              <small>{d.school.region}</small>
+            </div>
+            <div className="actions">
+              <button
+                disabled={schoolBusy}
+                onClick={() => void loadClassrooms(d.school!)}
+              >
+                {schoolBusy ? "불러오는 중…" : "학급을 고사실로 불러오기"}
+              </button>
+              <button onClick={() => setChangingSchool(true)}>학교 변경</button>
+              <button
+                onClick={() =>
+                  edit((x) => {
+                    delete x.school;
+                  })
+                }
+              >
+                설정 해제
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <SchoolSearch selected={d.school?.code} onPick={chooseSchool} />
+            {changingSchool && (
+              <button onClick={() => setChangingSchool(false)}>취소</button>
+            )}
+          </>
+        )}
+        {schoolError && (
+          <p className="field-error" role="alert">
+            {schoolError}
+          </p>
+        )}
+      </Panel>
       <details
         className="room-disclosure"
         open={roomsOpen}

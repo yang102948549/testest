@@ -2,6 +2,8 @@ import { spawn } from "node:child_process";
 import { access, cp, readFile, readdir } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
+import "./build-license-verifier.mjs";
+import "./third-party-notices.mjs";
 
 // Keep downloaded build tools local. Antivirus/OneDrive may briefly lock an
 // extracted NSIS directory and reject electron-builder's immediate rename.
@@ -73,7 +75,7 @@ for (let attempt = 0; attempt < 3; attempt++) {
   const code = await new Promise((resolve, reject) => {
     const child = spawn(
       process.execPath,
-      ["node_modules/electron-builder/cli.js", "--win", "--x64"],
+      ["node_modules/electron-builder/cli.js", "--win", "--x64", "--config.electronDist=node_modules/electron/dist", ...process.argv.slice(2)],
       { env, stdio: "inherit" },
     );
     child.on("error", reject);

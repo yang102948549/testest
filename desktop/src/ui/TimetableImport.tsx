@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarSearch, FileSpreadsheet } from "lucide-react";
 import { desktop } from "../bridge";
-import { ExamDocument } from "../domain/model";
+import { ExamDocument, uid } from "../domain/model";
+import { isDesignated } from "../domain/rules";
 import {
   ComciganSchool,
   DateSource,
@@ -13,39 +14,35 @@ import {
   isExamSubject,
   matchTeachers,
 } from "../domain/timetable";
+import { SchoolSearch, cleanError, rememberSchool } from "./SchoolSearch";
 import { Edit, Modal, formatDay } from "./WorkflowShared";
 
-const SCHOOL_KEY = "comcigan-school";
-const readSchool = (): ComciganSchool | null => {
-  try {
-    return JSON.parse(localStorage.getItem(SCHOOL_KEY) ?? "null");
-  } catch {
-    return null;
-  }
-};
-const clean = (e: unknown) =>
-  (e instanceof Error ? e.message : String(e)).replace(
-    /^Error invoking remote method '[^']+': (Error: )?/,
-    "",
-  );
+type Filter = "all" | "review" | "linked";
 
-/** Timetable → "cannot proctor" periods for normal teachers who teach then. */
+/**
+ * Timetable → proctoring periods. "blocked": normal teachers cannot proctor
+ * while they teach. "designated": special teachers proctor the periods they teach.
+ */
 export function TimetableImport({
   d,
   edit,
   notify,
+  mode,
   onClose,
 }: {
   d: ExamDocument;
   edit: Edit;
   notify: (s: string) => void;
+  mode: "blocked" | "designated";
   onClose: () => void;
 }) {
-  const saved = readSchool();
+  const designatedMode = mode === "designated";
+  const inScope = (t: ExamDocument["teachers"][number]) =>
+    designatedMode ? isDesignated(t) : true;
   const [tab, setTab] = useState<"comcigan" | "excel">("comcigan"),
-    [query, setQuery] = useState(saved?.name ?? ""),
-    [schools, setSchools] = useState<ComciganSchool[] | null>(null),
-    [school, setSchool] = useState<ComciganSchool | null>(null),
+    [school, setSchool] = useState<ComciganSchool | null>(d.school ?? null),
+    [otherSchool, setOtherSchool] = useState(!d.school),
+    [filter, setFilter] = useState<Filter>(designatedMode ? "linked" : "all"),
     [busy, setBusy] = useState(""),
     [error, setError] = useState(""),
     [loaded, setLoaded] = useState<{
@@ -64,7 +61,7 @@ export function TimetableImport({
         throw new Error("앱이 업데이트되었습니다. 앱을 닫고 다시 실행해 주세요.");
       await fn();
     } catch (e) {
-      setError(clean(e));
+      setError(cleanError(e));
     } finally {
       setBusy("");
     }
@@ -75,27 +72,27 @@ export function TimetableImport({
   ) => {
     const lessons = result.lessons.filter((l) => !isExamSubject(l.subject));
     setLoaded({ from, lessons, sources: result.sources });
-    const found = matchTeachers(lessons, d.teachers);
+    const found = matchTeachers(lessons, d.teachers, inScope);
     setMatches(found);
     setPicked(new Set(found.filter((m) => m.teacherId).map((m) => m.key)));
+    // Special teachers are few; show everything when none of them matched.
+    if (designatedMode) setFilter(found.some((m) => m.teacherId) ? "linked" : "all");
   };
-  const search = () =>
-    run("search", async () => {
-      const found = await desktop!.searchSchools(query);
-      setSchools(found);
-      if (!found.length) setError("검색된 학교가 없습니다. 이름을 줄여서 검색해 보세요.");
-    });
   const pick = (s: ComciganSchool) =>
     run("fetch", async () => {
       const t = await desktop!.fetchComcigan(s.code);
-      try {
-        localStorage.setItem(SCHOOL_KEY, JSON.stringify(s));
-      } catch {
-        /* per-viewer convenience only */
-      }
+      rememberSchool(s);
       setSchool(s);
       use(`컴시간 · ${s.name}`, comciganLessons(t, d.dates));
     });
+  // A school set in the exam settings loads right away.
+  const auto = useRef(false);
+  useEffect(() => {
+    if (auto.current || !d.school) return;
+    auto.current = true;
+    void pick(d.school);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const openFiles = () =>
     run("files", async () => {
       const sheets = await desktop!.importTimetableFiles();
@@ -107,7 +104,7 @@ export function TimetableImport({
         );
       use("엑셀 시간표", result);
     });
-  const roster = d.teachers.filter((t) => t.role !== "excluded");
+  const roster = d.teachers.filter((t) => t.role !== "excluded" && inScope(t));
   const chosen = matches.filter((m) => m.teacherId && picked.has(m.key));
   // Same masked name for different teachers: tell the rows apart by subject.
   const nameOf = (m: TeacherMatch) =>
@@ -115,20 +112,58 @@ export function TimetableImport({
       ? `${m.label} (${m.subjects.join("·") || "과목 없음"})`
       : m.label;
   const pickable = matches.filter((m) => m.teacherId);
-  const normalChosen = chosen.filter(
-    (m) => d.teachers.find((t) => t.id === m.teacherId)?.role === "normal",
-  );
+  const applicable = chosen.filter((m) => {
+    const t = d.teachers.find((a) => a.id === m.teacherId);
+    return t && (designatedMode ? isDesignated(t) : t.role === "normal");
+  });
+  const unlinked = matches.filter((m) => !m.teacherId);
+  const shown = matches
+    .map((m, i) => ({ m, i }))
+    .filter(({ m }) =>
+      filter === "all" ? true : filter === "linked" ? !!m.teacherId : !m.teacherId,
+    );
+  // Timetable teachers missing from the roster become new teachers, masked name included.
+  const addAsNew = (rows: TeacherMatch[]) => {
+    const ids = new Map(rows.map((m) => [m.key, uid()]));
+    edit((x) => {
+      for (const m of rows)
+        x.teachers.push({
+          id: ids.get(m.key)!,
+          name: m.label,
+          subjects: m.subjects,
+          homeroom: null,
+          movingRooms: [],
+          role: designatedMode ? "designated" : "normal",
+          note: "시간표에서 추가",
+          availability: designatedMode ? [] : null,
+          exclusions: [],
+        });
+    });
+    setMatches((list) =>
+      list.map((m) => (ids.has(m.key) ? { ...m, teacherId: ids.get(m.key)! } : m)),
+    );
+    setPicked((old) => new Set([...old, ...ids.keys()]));
+  };
   const excel = loaded?.from === "엑셀 시간표";
   const sourceLabel = {
     week: excel ? "날짜 일치" : "그 주 실제 시간표",
     base: excel ? "요일 기준" : "기본 시간표(요일 기준)",
     none: "수업 정보 없음",
   } as const;
+  const filters: [Filter, string][] = [
+    ["all", `전체 ${matches.length}`],
+    ["review", `연결 필요 ${unlinked.length}`],
+    ["linked", `연결됨 ${pickable.length}`],
+  ];
   return (
     <Modal
       wide
       title="시간표에서 불러오기"
-      subtitle="시험 시간에 수업이 있는 일반 교사를 감독불가로 체크합니다. 기존 체크는 그대로 두고 더하기만 합니다."
+      subtitle={
+        designatedMode
+          ? "시험 시간에 수업이 있는 특별교사의 교시를 감독 가능으로 체크합니다. 기존 체크는 그대로 두고 더하기만 합니다."
+          : "시험 시간에 수업이 있는 일반 교사를 감독불가로 체크합니다. 기존 체크는 그대로 두고 더하기만 합니다."
+      }
       onClose={onClose}
       footer={
         <>
@@ -140,23 +175,27 @@ export function TimetableImport({
           <button onClick={onClose}>취소</button>
           <button
             className="primary"
-            disabled={!normalChosen.length || !!busy}
+            disabled={!applicable.length || !!busy}
             onClick={() => {
               let result = { changed: 0, skipped: [] as string[] };
               edit((x) => {
-                result = applyTimetable(x, chosen);
+                result = applyTimetable(x, chosen, mode);
               });
               notify(
-                `${result.changed}명에게 수업 교시를 감독불가로 체크했습니다.` +
+                (designatedMode
+                  ? `${result.changed}명에게 수업 교시를 감독 가능으로 체크했습니다.`
+                  : `${result.changed}명에게 수업 교시를 감독불가로 체크했습니다.`) +
                   (result.skipped.length
-                    ? ` 특별교사 ${result.skipped.length}명(${result.skipped.join(", ")})은 지정 교시를 직접 확인해 주세요.`
+                    ? designatedMode
+                      ? ` 일반 교사 ${result.skipped.length}명(${result.skipped.join(", ")})은 제외했습니다.`
+                      : ` 특별교사 ${result.skipped.length}명(${result.skipped.join(", ")})은 지정 교시를 직접 확인해 주세요.`
                     : "") +
                   " 확인 후 저장하세요.",
               );
               onClose();
             }}
           >
-            {normalChosen.length}명 적용
+            {applicable.length}명 적용
           </button>
         </>
       }
@@ -178,48 +217,34 @@ export function TimetableImport({
       {tab === "comcigan" ? (
         <div className="import-source">
           <h3>
-            <CalendarSearch size={17} /> 학교 검색
+            <CalendarSearch size={17} /> 컴시간 학교
           </h3>
-          <form
-            className="link-row"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (query.trim().length >= 2) void search();
-            }}
-          >
-            <input
-              aria-label="학교 이름"
-              placeholder="학교 이름 (예: 한국고)"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="primary"
-              disabled={query.trim().length < 2 || !!busy}
-            >
-              {busy === "search" ? "검색 중…" : "검색"}
-            </button>
-          </form>
-          {!!schools?.length && (
-            <div className="school-list" role="list">
-              {schools.map((s) => (
-                <button
-                  key={s.code}
-                  role="listitem"
-                  className={school?.code === s.code ? "selected" : ""}
-                  disabled={!!busy}
-                  onClick={() => void pick(s)}
-                >
-                  <b>{s.name}</b>
-                  <small>{s.region}</small>
+          {d.school && !otherSchool ? (
+            <div className="school-current">
+              <div>
+                <b>{d.school.name}</b>
+                <small>{d.school.region} · 시험 설정의 학교</small>
+              </div>
+              <div className="actions">
+                <button disabled={!!busy} onClick={() => void pick(d.school!)}>
+                  {busy === "fetch" ? "받는 중…" : "다시 불러오기"}
                 </button>
-              ))}
+                <button onClick={() => setOtherSchool(true)}>
+                  다른 학교 검색
+                </button>
+              </div>
             </div>
+          ) : (
+            <SchoolSearch
+              selected={school?.code}
+              disabled={!!busy}
+              onPick={(s) => void pick(s)}
+            />
           )}
           <p>
             컴시간은 이번 주와 다음 주 시간표만 제공합니다. 그 밖의 시험일은
-            기본 시간표를 요일에 맞춰 씁니다.
+            기본 시간표를 요일에 맞춰 씁니다. 학교를 설정하지 않아도 여기서
+            검색하거나 엑셀 시간표로 불러올 수 있습니다.
             {busy === "fetch" && " 시간표를 받는 중…"}
           </p>
         </div>
@@ -259,6 +284,28 @@ export function TimetableImport({
               교사만 체크하세요. 이름이 가려져 여러 교사가 해당되면 연결할
               교사를 고르세요. ‘고사·시험’은 수업이 아니므로 제외했습니다.
             </p>
+            <div className="match-toolbar">
+              <div className="workflow-tabs">
+                {filters.map(([id, label]) => (
+                  <button
+                    key={id}
+                    className={filter === id ? "active" : ""}
+                    onClick={() => setFilter(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {!!unlinked.length && !designatedMode && (
+                <button
+                  title="명단에 없는 교사를 시간표의 이름(가려진 이름 포함) 그대로 새 일반 교사로 추가합니다. 이름은 교사 명단에서 고칠 수 있습니다."
+                  onClick={() => addAsNew(unlinked.filter((m) => !m.candidates.length))}
+                  disabled={!unlinked.some((m) => !m.candidates.length)}
+                >
+                  명단에 없는 {unlinked.filter((m) => !m.candidates.length).length}명 새 교사로 추가
+                </button>
+              )}
+            </div>
             <div className="workflow-table-scroll">
               <table>
                 <thead>
@@ -289,7 +336,16 @@ export function TimetableImport({
                   </tr>
                 </thead>
                 <tbody>
-                  {matches.map((m, i) => {
+                  {!shown.length && (
+                    <tr>
+                      <td colSpan={5} className="muted-cell">
+                        {filter === "linked"
+                          ? "명단과 연결된 교사가 없습니다. ‘전체’에서 직접 연결하세요."
+                          : "해당하는 교사가 없습니다."}
+                      </td>
+                    </tr>
+                  )}
+                  {shown.map(({ m, i }) => {
                     const others = roster.filter(
                       (t) => !m.candidates.includes(t),
                     );
@@ -328,50 +384,63 @@ export function TimetableImport({
                                 : "muted-cell"
                           }
                         >
-                          <select
-                            aria-label={`${nameOf(m)} 연결할 교사`}
-                            value={m.teacherId}
-                            onChange={(e) => {
-                              const id = e.target.value;
-                              setMatches((list) =>
-                                list.map((x, k) =>
-                                  k === i ? { ...x, teacherId: id } : x,
-                                ),
-                              );
-                              // Choosing a teacher selects the row; clearing it deselects.
-                              setPicked((old) => {
-                                const next = new Set(old);
-                                if (id) next.add(m.key);
-                                else next.delete(m.key);
-                                return next;
-                              });
-                            }}
-                          >
-                            <option value="">
-                              {m.candidates.length > 1
-                                ? `후보 ${m.candidates.length}명 · 선택`
-                                : m.candidates.length
-                                  ? "연결 안 함"
-                                  : "명단에 없음 · 연결 안 함"}
-                            </option>
-                            {m.candidates.map((t) => (
-                              <option key={t.id} value={t.id}>
-                                {t.name}
-                                {t.subjects.length
-                                  ? ` (${t.subjects.join("·")})`
-                                  : ""}
+                          <div className="match-select">
+                            <select
+                              aria-label={`${nameOf(m)} 연결할 교사`}
+                              value={m.teacherId}
+                              onChange={(e) => {
+                                const id = e.target.value;
+                                setMatches((list) =>
+                                  list.map((x, k) =>
+                                    k === i ? { ...x, teacherId: id } : x,
+                                  ),
+                                );
+                                // Choosing a teacher selects the row; clearing it deselects.
+                                setPicked((old) => {
+                                  const next = new Set(old);
+                                  if (id) next.add(m.key);
+                                  else next.delete(m.key);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <option value="">
+                                {m.candidates.length > 1
+                                  ? `후보 ${m.candidates.length}명 · 선택`
+                                  : m.candidates.length
+                                    ? "연결 안 함"
+                                    : "명단에 없음 · 연결 안 함"}
                               </option>
-                            ))}
-                            {!!others.length && (
-                              <optgroup label="다른 교사">
-                                {others.map((t) => (
-                                  <option key={t.id} value={t.id}>
-                                    {t.name}
-                                  </option>
-                                ))}
-                              </optgroup>
+                              {m.candidates.map((t) => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name}
+                                  {t.subjects.length
+                                    ? ` (${t.subjects.join("·")})`
+                                    : ""}
+                                </option>
+                              ))}
+                              {!!others.length && (
+                                <optgroup label="다른 교사">
+                                  {others.map((t) => (
+                                    <option key={t.id} value={t.id}>
+                                      {t.name}
+                                      {t.subjects.length
+                                        ? ` (${t.subjects.join("·")})`
+                                        : ""}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              )}
+                            </select>
+                            {!designatedMode && !m.teacherId && !m.candidates.length && (
+                              <button
+                                title="시간표의 이름 그대로 새 교사로 추가"
+                                onClick={() => addAsNew([m])}
+                              >
+                                새 교사로 추가
+                              </button>
                             )}
-                          </select>
+                          </div>
                         </td>
                       </tr>
                     );
